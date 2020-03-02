@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Using rcc to reshard a redis cluster using keyspace notification - rcc</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">rcc</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href="../CHANGELOG/" class="nav-link">Changelog</a>
+                            </li>
+                            <li class="navitem active">
+                                <a href="./" class="nav-link">Using rcc to reshard a redis cluster using keyspace notification</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../CHANGELOG/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" class="nav-link disabled">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#using-rcc-to-reshard-a-redis-cluster-using-keyspace-notification" class="nav-link">Using rcc to reshard a redis cluster using keyspace notification</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#introduction" class="nav-link">Introduction</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="using-rcc-to-reshard-a-redis-cluster-using-keyspace-notification">Using rcc to reshard a redis cluster using keyspace notification</h1>
+<p><img src="pie.jpg" /></p>
+<h2 id="introduction">Introduction</h2>
+<p><a href="https://github.com/machinezone/rcc/">rcc</a> comes with 2 important tools, one for analyzing the keys access accross nodes, built on top of <a href="https://redis.io/topics/notifications">redis keyspace notifications</a> (which in turns runs on top of redis PubSub). The instrumentation is done over a period of time to sample the key access patterns. A 'weights' file is created as part of this tool. That file is saved in the current working directory by default. It is a very simple csv file that show how often a key is accessed. Currently rcc only support tracking <em>XADD</em> redis commands.</p>
+<pre><code>$ head weights.csv
+_pubsub::foo,50
+_pubsub::bar,53
+_pubsub::baz,7
+_pubsub::buz,19
+_pubsub::blah,940
+_pubsub::blooh,20
+_pubsub::xxx,552
+_pubsub::yyy,571
+_pubsub::zzz,92
+_pubsub::foo,5035
+</code></pre>
+
+<p>The second tool is used to reshard a cluster, and migrate slots to node using the bin-packing algorithm. To feed this algorithm, weights are required.</p>
+<h3 id="generating-redis-cluster-traffic">Generating redis cluster traffic.</h3>
+<p>We use the <code>cobra publish</code> in batch mode command to send data to <a href="https://github.com/machinezone/rcc/">cobra</a>, which internally send lots of XADD commands to our redis cluster.</p>
+<ul>
+<li>Cobra server started with: <code>cobra run -r redis://localhost:11000</code></li>
+<li>Cobra publishers: cobra publish --batch</li>
+</ul>
+<p>The redis cluster is started with: <code>rcc make-cluster</code> ; rcc has a convenience sub-command to generate config file for cluster (by default 3 masters and 3 replicas), and finally initialize the cluster.</p>
+<h3 id="keyspace-access-analysis-before-resharding">Keyspace access analysis before resharding</h3>
+<pre><code>rcc analyze-keyspace --redis_url redis://localhost:11000 --timeout 10
+...
+== Nodes ==
+# each ∎ represents a count of 105. total 15515
+127.0.0.1:11000 [  6789] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+127.0.0.1:11002 [  4983] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+127.0.0.1:11001 [  3743] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+</code></pre>
+
+<h3 id="resharding">Resharding</h3>
+<pre><code>$ rcc reshard --redis_url redis://localhost:11000
+file descriptors ulimit: 1024
+resharding can be hungry, bump it with ulimit -n if needed
+== f3fa13802f339abb98ccb377e8a1a4eb957be987 / 127.0.0.1:11000 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 8c67b776ab52ad756777866dcb8425cc866c71a3 / 127.0.0.1:11001 ==
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrated 10 slots
+Waiting for cluster view to be consistent...
+............== d50246e7e3914639759add181c71a2e3c879ed2f / 127.0.0.1:11002 ==
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrating 1 keys
+migrated 11 slots
+Waiting for cluster view to be consistent...
+.....total migrated slots: 11
+</code></pre>
+
+<p>It roughtly looks like we took slots away from the first node, and gave them to the other two redis instances.</p>
+<h3 id="keyspace-access-analysis-after-resharding">Keyspace access analysis after resharding</h3>
+<pre><code>rcc analyze-keyspace --redis_url redis://localhost:11000 --timeout 10
+...
+== Nodes ==
+# each ∎ represents a count of 79. total 15114
+127.0.0.1:11002 [  5087] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+127.0.0.1:11000 [  5040] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+127.0.0.1:11001 [  4987] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+</code></pre></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form>
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
