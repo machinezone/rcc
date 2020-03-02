@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Cluster Ips - rcc</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">rcc</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href=".." class="nav-link">General</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../CHANGELOG/" class="nav-link">Changelog</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../binpacking/" class="nav-link">Binpacking</a>
+                            </li>
+                            <li class="navitem active">
+                                <a href="./" class="nav-link">Cluster Ips</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../resharding/" class="nav-link">Resharding</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../binpacking/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../resharding/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#cluster-ips" class="nav-link">Cluster Ips</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#problem" class="nav-link">Problem</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#solution" class="nav-link">Solution</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#resharding" class="nav-link">Resharding</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="cluster-ips">Cluster Ips</h1>
+<h2 id="problem">Problem</h2>
+<p>Sometimes a redis cluster node dies, and kubernetes restarts it for you. And when this happens sometimes your pod will get a new ip address. However Redis read the cluster config from a file, nodes.conf, and that file could have the old value prior to the restart.</p>
+<h2 id="solution">Solution</h2>
+<h3 id="the-nice-way">The nice way</h3>
+<p>This can be fixed automatically, so that when redis start it updates its ip address in nodes.conf with the one currently assigned. A nice way to do that is explained in this <a href="https://github.com/rustudorcalin/deploying-redis-cluster">guide</a>. Essentially we use a configmap that contain the script, and use that to start redis-server. An environment variable containing the pod ip is setup with this magic, in the deployment config file.</p>
+<pre><code>env:
+- name: POD_IP
+  valueFrom:
+    fieldRef:
+      fieldPath: status.podIP
+</code></pre>
+
+<p>The shell script regexp is from the update-node.sh.</p>
+<pre><code>#!/bin/sh
+REDIS_NODES=&quot;/data/nodes.conf&quot;
+sed -i -e &quot;/myself/ s/[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/${POD_IP}/&quot; ${REDIS_NODES}
+exec &quot;$@&quot;
+</code></pre>
+
+<p>Don't ask me to debug this regexp :)</p>
+<h3 id="the-lame-way">The lame way</h3>
+<p>However sometimes you just want to fix things manually, before you automate them. To do that it is as simple as editing the script with an editor, and shutting down the node with <code>redis-cli SHUTDOWN</code>.</p>
+<p>I figured this out thanks to the new <a href="https://github.com/machinezone/rcc/">rcc</a> cluster-check command, while trying to reshard my cluster.</p>
+<pre><code>~ $ rcc
+Usage: rcc [OPTIONS] COMMAND [ARGS]...
+
+  RCC
+
+  Rcc is a Redis Cluster Client
+
+Options:
+  --version      Show the version and exit.
+  -v, --verbose
+  --help         Show this message and exit.
+
+Commands:
+  analyze-keyspace  Subscribe to a channel rcc analyze-keyspace...
+  cli               cli tool similar to redis-cli
+  cluster-check     Similar to redis-cli --cluster check Make sure all
+                    nodes...
+  cluster-info      Monitor redis metrics rcc cluster-info --stats...
+  cluster-init
+  cluster-nodes     Monitor redis metrics rcc cluster-nodes
+  endpoints         Print endpoints associated with a redis cluster service
+  make-cluster
+  migrate
+  publish           Publish to a channel
+  reshard           Reshard using the bin-packing technique
+  sub               Subscribe to a channel rcc sub --redis_url...
+  subscribe         Subscribe to a channel rcc subscribe --redis_url...
+~ $ rcc --version
+rcc, version 0.7.4
+~ $ rcc cluster-check --redis_url redis://172.24.222.56:6379
+cluster unhealthy. Re-run with -v
+</code></pre>
+
+<p>To get details you can rerun with the verbose flag, whose alias is -v. Then
+it's a bit painful but you'll need to visually scan for the nodes whose
+signature are different. This could be because slots assignments are differents
+between nodes, or if slave/masters assignments differs.</p>
+<pre><code>~ $ rcc -v cluster-check --redis_url redis://172.24.222.56:6379
+2020-02-26 01:58:53 INFO redis://172.24.222.56:6379 5f9bcb66a8e67859342aa614082f1b24 balanced True coverage True
+2020-02-26 01:58:53 INFO
+46e2fe542420f0adf7164d828e4e8e7b2726d90f 172.24.222.56:6379 slave
+10767e9f3de8cc7a052c8a9146eb350d116910c1 172.24.250.232:6379 slave
+b77fd799122312b936e99e7038cfd34d8a30f7f0 172.25.189.166:6379 master 3277-4914
+044ccfbac96fad22665a3d4990de7be00d75599b 172.25.45.12:6379 master 4915-6553
+70c810be2883c2bcf06888cd7214b6c8aacbe78b 172.26.163.95:6379 master 6554-8191
+75e4cb42261db101de90d325859fb6d789e7c22a 172.26.188.9:6379 master 8192-9829
+4385920f7dad41b96cf44503eff514b40dbc2eac 172.26.235.91:6379 master 9830-11468
+6de40bb7f8eab4e68d806ddbd5835c74340ac06f 172.26.42.98:6379 master 11469-13106
+03d5101dd3c8139d48670c4cf6137205fa80d59d 172.26.46.201:6379 master 13107-14745
+d99de160cc86f8ac9713116884329cb902e6fcd2 172.27.164.230:6379 master 14746-16383
+2293aea0272bd7bc87c56afdc77b6f545cb01fc8 172.27.70.50:6379 slave
+9ef5e047a3f570e67a06871058bb2e54c2600acb 172.27.98.220:6379 master 0-1637
+4cde2690f32644877c96e59f13bd72f44022f20f 172.28.115.173:6379 master 1638-3276
+e3534818adecb91e85e64859545ae17e65c35733 172.28.225.191:6379 slave
+592fac9e124a634d0fb485147a89e13767c1a02f 172.28.53.125:6379 slave
+08ba1ddb442e887732aa1b2502c4dda1dcd42acc 172.28.93.57:6379 slave
+9e66ffc57e7df1d2ed4148067846f8358a1b2c70 172.29.113.236:6379 slave
+066f891a0d9db6ffd71647e9126f023080bcbb41 172.29.203.50:6379 slave
+2af270c467f97e7f4af24753ea26de97dfdf5c78 172.29.56.110:6379 slave
+b6af95ea28ec9e8b44f1697aea6475dbc446453f 172.30.99.146:6379 slave
+
+... output trimmed for readability
+
+2020-02-26 01:58:53 INFO redis://172.27.70.50:6379 5f9bcb66a8e67859342aa614082f1b24 balanced True coverage True
+2020-02-26 01:58:53 INFO
+46e2fe542420f0adf7164d828e4e8e7b2726d90f 172.24.222.56:6379 slave
+10767e9f3de8cc7a052c8a9146eb350d116910c1 172.24.250.232:6379 slave
+b77fd799122312b936e99e7038cfd34d8a30f7f0 172.25.189.166:6379 master 3277-4914
+044ccfbac96fad22665a3d4990de7be00d75599b 172.25.45.12:6379 master 4915-6553
+70c810be2883c2bcf06888cd7214b6c8aacbe78b 172.26.163.95:6379 master 6554-8191
+75e4cb42261db101de90d325859fb6d789e7c22a 172.26.188.9:6379 master 8192-9829
+4385920f7dad41b96cf44503eff514b40dbc2eac 172.26.235.91:6379 master 9830-11468
+6de40bb7f8eab4e68d806ddbd5835c74340ac06f 172.26.42.98:6379 master 11469-13106
+03d5101dd3c8139d48670c4cf6137205fa80d59d 172.26.46.201:6379 master 13107-14745
+d99de160cc86f8ac9713116884329cb902e6fcd2 172.27.164.230:6379 master 14746-16383
+2293aea0272bd7bc87c56afdc77b6f545cb01fc8 172.27.70.50:6379 slave
+9ef5e047a3f570e67a06871058bb2e54c2600acb 172.27.98.220:6379 master 0-1637
+4cde2690f32644877c96e59f13bd72f44022f20f 172.28.115.173:6379 master 1638-3276
+e3534818adecb91e85e64859545ae17e65c35733 172.28.225.191:6379 slave
+592fac9e124a634d0fb485147a89e13767c1a02f 172.28.53.125:6379 slave
+08ba1ddb442e887732aa1b2502c4dda1dcd42acc 172.28.93.57:6379 slave
+9e66ffc57e7df1d2ed4148067846f8358a1b2c70 172.29.113.236:6379 slave
+066f891a0d9db6ffd71647e9126f023080bcbb41 172.29.203.50:6379 slave
+2af270c467f97e7f4af24753ea26de97dfdf5c78 172.29.56.110:6379 slave
+b6af95ea28ec9e8b44f1697aea6475dbc446453f 172.30.99.146:6379 slave
+
+2020-02-26 01:58:53 INFO redis://172.27.98.220:6379 bad1c3a12e48191a830d21cc9f855ed7 balanced True coverage True
+2020-02-26 01:58:53 INFO
+46e2fe542420f0adf7164d828e4e8e7b2726d90f 172.24.222.56:6379 slave
+10767e9f3de8cc7a052c8a9146eb350d116910c1 172.24.250.232:6379 slave
+b77fd799122312b936e99e7038cfd34d8a30f7f0 172.25.189.166:6379 master 3277-4914
+044ccfbac96fad22665a3d4990de7be00d75599b 172.25.45.12:6379 master 4915-6553
+70c810be2883c2bcf06888cd7214b6c8aacbe78b 172.26.163.95:6379 master 6554-8191
+75e4cb42261db101de90d325859fb6d789e7c22a 172.26.188.9:6379 master 8192-9829
+4385920f7dad41b96cf44503eff514b40dbc2eac 172.26.235.91:6379 master 9830-11468
+6de40bb7f8eab4e68d806ddbd5835c74340ac06f 172.26.42.98:6379 master 11469-13106
+03d5101dd3c8139d48670c4cf6137205fa80d59d 172.26.46.201:6379 master 13107-14745
+d99de160cc86f8ac9713116884329cb902e6fcd2 172.27.164.230:6379 master 14746-16383
+2293aea0272bd7bc87c56afdc77b6f545cb01fc8 172.27.70.50:6379 slave
+9ef5e047a3f570e67a06871058bb2e54c2600acb 172.27.98.217:6379 master 0-1637
+4cde2690f32644877c96e59f13bd72f44022f20f 172.28.115.173:6379 master 1638-3276
+e3534818adecb91e85e64859545ae17e65c35733 172.28.225.191:6379 slave
+592fac9e124a634d0fb485147a89e13767c1a02f 172.28.53.125:6379 slave
+08ba1ddb442e887732aa1b2502c4dda1dcd42acc 172.28.93.57:6379 slave
+9e66ffc57e7df1d2ed4148067846f8358a1b2c70 172.29.113.236:6379 slave
+066f891a0d9db6ffd71647e9126f023080bcbb41 172.29.203.50:6379 slave
+2af270c467f97e7f4af24753ea26de97dfdf5c78 172.29.56.110:6379 slave
+b6af95ea28ec9e8b44f1697aea6475dbc446453f 172.30.99.146:6379 slave
+
+2020-02-26 01:58:53 INFO redis://172.28.115.173:6379 5f9bcb66a8e67859342aa614082f1b24 balanced True coverage True
+2020-02-26 01:58:53 INFO
+46e2fe542420f0adf7164d828e4e8e7b2726d90f 172.24.222.56:6379 slave
+10767e9f3de8cc7a052c8a9146eb350d116910c1 172.24.250.232:6379 slave
+b77fd799122312b936e99e7038cfd34d8a30f7f0 172.25.189.166:6379 master 3277-4914
+044ccfbac96fad22665a3d4990de7be00d75599b 172.25.45.12:6379 master 4915-6553
+70c810be2883c2bcf06888cd7214b6c8aacbe78b 172.26.163.95:6379 master 6554-8191
+75e4cb42261db101de90d325859fb6d789e7c22a 172.26.188.9:6379 master 8192-9829
+4385920f7dad41b96cf44503eff514b40dbc2eac 172.26.235.91:6379 master 9830-11468
+6de40bb7f8eab4e68d806ddbd5835c74340ac06f 172.26.42.98:6379 master 11469-13106
+03d5101dd3c8139d48670c4cf6137205fa80d59d 172.26.46.201:6379 master 13107-14745
+d99de160cc86f8ac9713116884329cb902e6fcd2 172.27.164.230:6379 master 14746-16383
+2293aea0272bd7bc87c56afdc77b6f545cb01fc8 172.27.70.50:6379 slave
+9ef5e047a3f570e67a06871058bb2e54c2600acb 172.27.98.220:6379 master 0-1637
+4cde2690f32644877c96e59f13bd72f44022f20f 172.28.115.173:6379 master 1638-3276
+e3534818adecb91e85e64859545ae17e65c35733 172.28.225.191:6379 slave
+592fac9e124a634d0fb485147a89e13767c1a02f 172.28.53.125:6379 slave
+08ba1ddb442e887732aa1b2502c4dda1dcd42acc 172.28.93.57:6379 slave
+9e66ffc57e7df1d2ed4148067846f8358a1b2c70 172.29.113.236:6379 slave
+066f891a0d9db6ffd71647e9126f023080bcbb41 172.29.203.50:6379 slave
+2af270c467f97e7f4af24753ea26de97dfdf5c78 172.29.56.110:6379 slave
+b6af95ea28ec9e8b44f1697aea6475dbc446453f 172.30.99.146:6379 slave
+
+...
+
+2020-02-26 01:58:53 INFO 2 unique signatures
+cluster unhealthy. Re-run with -v
+~ $
+</code></pre>
+
+<p>First we need to know which node has the broken ip, so that we can connect to it. I'll use <code>oc get -o yaml endpoints redis-cluster</code></p>
+<pre><code>  - ip: 172.27.98.220
+    nodeName: blah-blah-blah.example.com
+    targetRef:
+      kind: Pod
+      name: redis-cluster-2-sl2wf
+      namespace: cobra-live
+      resourceVersion: &quot;1568323619&quot;
+      uid: 4e174e94-4143-11ea-b4fb-eeeeeeeeeeee
+</code></pre>
+
+<p>Now I know I need to rsh to <code>redis-cluster-2-sl2wf</code>. Once we've done that, we'll just need some vim/insert your favorite editor magic, to use the '172.27.98.220' address for the 'myself' node (the one where we are connected).</p>
+<p>The node will be rebooted, and we can ssh to it and grep for the new ip address.</p>
+<pre><code>root@redis-cluster-2-sl2wf:/data# grep 220 nodes.conf 
+9ef5e047a3f570e67a06871058bb2e54c2600acb 172.27.98.220:6379@16379 myself,master - 0 1582064573000 22 connected 0-1637
+</code></pre>
+
+<p>It's the right now. Let's re-run the cluster-check command, it will happilly succeed.</p>
+<pre><code>~ $
+~ $
+~ $
+~ $
+~ $ rcc -v cluster-check --redis_url redis://172.24.222.56:6379
+2020-02-26 02:11:44 INFO redis://172.24.222.56:6379 5f9bcb66a8e67859342aa614082f1b24 balanced True coverage True
+2020-02-26 02:11:44 INFO
+46e2fe542420f0adf7164d828e4e8e7b2726d90f 172.24.222.56:6379 slave
+10767e9f3de8cc7a052c8a9146eb350d116910c1 172.24.250.232:6379 slave
+b77fd799122312b936e99e7038cfd34d8a30f7f0 172.25.189.166:6379 master 3277-4914
+044ccfbac96fad22665a3d4990de7be00d75599b 172.25.45.12:6379 master 4915-6553
+70c810be2883c2bcf06888cd7214b6c8aacbe78b 172.26.163.95:6379 master 6554-8191
+75e4cb42261db101de90d325859fb6d789e7c22a 172.26.188.9:6379 master 8192-9829
+4385920f7dad41b96cf44503eff514b40dbc2eac 172.26.235.91:6379 master 9830-11468
+6de40bb7f8eab4e68d806ddbd5835c74340ac06f 172.26.42.98:6379 master 11469-13106
+03d5101dd3c8139d48670c4cf6137205fa80d59d 172.26.46.201:6379 master 13107-14745
+d99de160cc86f8ac9713116884329cb902e6fcd2 172.27.164.230:6379 master 14746-16383
+2293aea0272bd7bc87c56afdc77b6f545cb01fc8 172.27.70.50:6379 slave
+9ef5e047a3f570e67a06871058bb2e54c2600acb 172.27.98.220:6379 master 0-1637
+4cde2690f32644877c96e59f13bd72f44022f20f 172.28.115.173:6379 master 1638-3276
+e3534818adecb91e85e64859545ae17e65c35733 172.28.225.191:6379 slave
+592fac9e124a634d0fb485147a89e13767c1a02f 172.28.53.125:6379 slave
+08ba1ddb442e887732aa1b2502c4dda1dcd42acc 172.28.93.57:6379 slave
+9e66ffc57e7df1d2ed4148067846f8358a1b2c70 172.29.113.236:6379 slave
+066f891a0d9db6ffd71647e9126f023080bcbb41 172.29.203.50:6379 slave
+2af270c467f97e7f4af24753ea26de97dfdf5c78 172.29.56.110:6379 slave
+b6af95ea28ec9e8b44f1697aea6475dbc446453f 172.30.99.146:6379 slave
+
+... edited for clarity ...
+
+2020-02-26 02:11:45 INFO redis://172.30.99.146:6379 5f9bcb66a8e67859342aa614082f1b24 balanced True coverage True
+2020-02-26 02:11:45 INFO
+46e2fe542420f0adf7164d828e4e8e7b2726d90f 172.24.222.56:6379 slave
+10767e9f3de8cc7a052c8a9146eb350d116910c1 172.24.250.232:6379 slave
+b77fd799122312b936e99e7038cfd34d8a30f7f0 172.25.189.166:6379 master 3277-4914
+044ccfbac96fad22665a3d4990de7be00d75599b 172.25.45.12:6379 master 4915-6553
+70c810be2883c2bcf06888cd7214b6c8aacbe78b 172.26.163.95:6379 master 6554-8191
+75e4cb42261db101de90d325859fb6d789e7c22a 172.26.188.9:6379 master 8192-9829
+4385920f7dad41b96cf44503eff514b40dbc2eac 172.26.235.91:6379 master 9830-11468
+6de40bb7f8eab4e68d806ddbd5835c74340ac06f 172.26.42.98:6379 master 11469-13106
+03d5101dd3c8139d48670c4cf6137205fa80d59d 172.26.46.201:6379 master 13107-14745
+d99de160cc86f8ac9713116884329cb902e6fcd2 172.27.164.230:6379 master 14746-16383
+2293aea0272bd7bc87c56afdc77b6f545cb01fc8 172.27.70.50:6379 slave
+9ef5e047a3f570e67a06871058bb2e54c2600acb 172.27.98.220:6379 master 0-1637
+4cde2690f32644877c96e59f13bd72f44022f20f 172.28.115.173:6379 master 1638-3276
+e3534818adecb91e85e64859545ae17e65c35733 172.28.225.191:6379 slave
+592fac9e124a634d0fb485147a89e13767c1a02f 172.28.53.125:6379 slave
+08ba1ddb442e887732aa1b2502c4dda1dcd42acc 172.28.93.57:6379 slave
+9e66ffc57e7df1d2ed4148067846f8358a1b2c70 172.29.113.236:6379 slave
+066f891a0d9db6ffd71647e9126f023080bcbb41 172.29.203.50:6379 slave
+2af270c467f97e7f4af24753ea26de97dfdf5c78 172.29.56.110:6379 slave
+b6af95ea28ec9e8b44f1697aea6475dbc446453f 172.30.99.146:6379 slave
+
+2020-02-26 02:11:45 INFO 1 unique signatures
+cluster ok
+~ $
+~ $
+</code></pre>
+
+<p>Hooray ! Now we can finally reshard the cluster since it is in a good state.</p>
+<h1 id="resharding">Resharding</h1>
+<pre><code>~ $
+~ $ rcc reshard --redis_url redis://172.24.222.56:6379
+file descriptors ulimit: 1048576
+resharding can be hungry, bump it with ulimit -n if needed
+== b77fd799122312b936e99e7038cfd34d8a30f7f0 / 172.25.189.166:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 044ccfbac96fad22665a3d4990de7be00d75599b / 172.25.45.12:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 70c810be2883c2bcf06888cd7214b6c8aacbe78b / 172.26.163.95:6379 ==
+migrated 1 slots
+Waiting for cluster view to be consistent...
+........== 75e4cb42261db101de90d325859fb6d789e7c22a / 172.26.188.9:6379 ==
+migrated 1 slots
+Waiting for cluster view to be consistent...
+..........== 4385920f7dad41b96cf44503eff514b40dbc2eac / 172.26.235.91:6379 ==
+migrated 1 slots
+Waiting for cluster view to be consistent...
+.......2020-02-26 02:34:37 ERROR timeout exceeded
+~ $
+~ $
+~ $ rcc reshard --redis_url redis://172.24.222.56:6379 --timeout 30
+file descriptors ulimit: 1048576
+resharding can be hungry, bump it with ulimit -n if needed
+== b77fd799122312b936e99e7038cfd34d8a30f7f0 / 172.25.189.166:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 044ccfbac96fad22665a3d4990de7be00d75599b / 172.25.45.12:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 70c810be2883c2bcf06888cd7214b6c8aacbe78b / 172.26.163.95:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 75e4cb42261db101de90d325859fb6d789e7c22a / 172.26.188.9:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 4385920f7dad41b96cf44503eff514b40dbc2eac / 172.26.235.91:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 6de40bb7f8eab4e68d806ddbd5835c74340ac06f / 172.26.42.98:6379 ==
+migrated 1 slots
+Waiting for cluster view to be consistent...
+...............== 03d5101dd3c8139d48670c4cf6137205fa80d59d / 172.26.46.201:6379 ==
+migrating 2 keys
+migrated 6 slots
+Waiting for cluster view to be consistent...
+........== d99de160cc86f8ac9713116884329cb902e6fcd2 / 172.27.164.230:6379 ==
+migrated 4 slots
+Waiting for cluster view to be consistent...
+.........== 9ef5e047a3f570e67a06871058bb2e54c2600acb / 172.27.98.220:6379 ==
+migrated 6 slots
+Waiting for cluster view to be consistent...
+.......== 4cde2690f32644877c96e59f13bd72f44022f20f / 172.28.115.173:6379 ==
+migrated 7 slots
+Waiting for cluster view to be consistent...
+...........2020-02-26 02:35:26 ERROR timeout exceeded
+~ $
+~ $
+~ $
+~ $
+~ $ rcc reshard --redis_url redis://172.24.222.56:6379 --timeout 45
+file descriptors ulimit: 1048576
+resharding can be hungry, bump it with ulimit -n if needed
+== b77fd799122312b936e99e7038cfd34d8a30f7f0 / 172.25.189.166:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 044ccfbac96fad22665a3d4990de7be00d75599b / 172.25.45.12:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 70c810be2883c2bcf06888cd7214b6c8aacbe78b / 172.26.163.95:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 75e4cb42261db101de90d325859fb6d789e7c22a / 172.26.188.9:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 4385920f7dad41b96cf44503eff514b40dbc2eac / 172.26.235.91:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 6de40bb7f8eab4e68d806ddbd5835c74340ac06f / 172.26.42.98:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 03d5101dd3c8139d48670c4cf6137205fa80d59d / 172.26.46.201:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== d99de160cc86f8ac9713116884329cb902e6fcd2 / 172.27.164.230:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 9ef5e047a3f570e67a06871058bb2e54c2600acb / 172.27.98.220:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.== 4cde2690f32644877c96e59f13bd72f44022f20f / 172.28.115.173:6379 ==
+migrated 0 slots
+Waiting for cluster view to be consistent...
+.total migrated slots: 0
+~ $
+~ $
+~ $
+~ $
+~ $
+~ $ rcc cluster-check --redis_url redis://172.24.222.56:6379
+cluster ok
+~ $
+~ $
+~ $
+~ $ rcc cluster-nodes --redis_url redis://172.24.222.56:6379
+Usage: rcc cluster-nodes [OPTIONS]
+Try &quot;rcc cluster-nodes --help&quot; for help.
+
+Error: no such option: --redis_url  Did you mean --redis_urls?
+~ $ rcc cluster-nodes --redis_urls redis://172.24.222.56:6379
+46e2fe542420f0adf7164d828e4e8e7b2726d90f 172.24.222.56:6379 slave
+10767e9f3de8cc7a052c8a9146eb350d116910c1 172.24.250.232:6379 slave
+b77fd799122312b936e99e7038cfd34d8a30f7f0 172.25.189.166:6379 master 3277-4261 4263-4279 4281-4914
+044ccfbac96fad22665a3d4990de7be00d75599b 172.25.45.12:6379 master 4915-5707 5709-6305 6307-6504 6506-6553 11364
+70c810be2883c2bcf06888cd7214b6c8aacbe78b 172.26.163.95:6379 master 6505 6554-7285 7287-7431 7433-7723 7725-8191
+75e4cb42261db101de90d325859fb6d789e7c22a 172.26.188.9:6379 master 7432 8192-8282 8284-9091 9093-9829
+4385920f7dad41b96cf44503eff514b40dbc2eac 172.26.235.91:6379 master 445 9830-10695 10697-10819 10821-11039 11041-11107 11109-11184 11186-11363 11365-11468
+6de40bb7f8eab4e68d806ddbd5835c74340ac06f 172.26.42.98:6379 master 11469-13106 15288
+03d5101dd3c8139d48670c4cf6137205fa80d59d 172.26.46.201:6379 master 943 3145 5708 7724 13107-14745 15198 15728
+d99de160cc86f8ac9713116884329cb902e6fcd2 172.27.164.230:6379 master 999 7286 10820 11108 14746-14996 14998-15197 15199-15287 15289-15727 15729-15840 15842-16383
+2293aea0272bd7bc87c56afdc77b6f545cb01fc8 172.27.70.50:6379 slave
+9ef5e047a3f570e67a06871058bb2e54c2600acb 172.27.98.220:6379 master 0-398 400-444 446-649 651-942 944-998 1000-1637 1649 6306 8283 9092 11185 14997
+4cde2690f32644877c96e59f13bd72f44022f20f 172.28.115.173:6379 master 399 650 1638-1648 1650-3144 3146-3276 4262 4280 10696 11040 15841
+e3534818adecb91e85e64859545ae17e65c35733 172.28.225.191:6379 slave
+592fac9e124a634d0fb485147a89e13767c1a02f 172.28.53.125:6379 slave
+08ba1ddb442e887732aa1b2502c4dda1dcd42acc 172.28.93.57:6379 slave
+9e66ffc57e7df1d2ed4148067846f8358a1b2c70 172.29.113.236:6379 slave
+066f891a0d9db6ffd71647e9126f023080bcbb41 172.29.203.50:6379 slave
+2af270c467f97e7f4af24753ea26de97dfdf5c78 172.29.56.110:6379 slave
+b6af95ea28ec9e8b44f1697aea6475dbc446453f 172.30.99.146:6379 slave
+</code></pre></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form>
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

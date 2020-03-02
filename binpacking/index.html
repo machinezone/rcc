@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Binpacking - rcc</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">rcc</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href=".." class="nav-link">General</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../CHANGELOG/" class="nav-link">Changelog</a>
+                            </li>
+                            <li class="navitem active">
+                                <a href="./" class="nav-link">Binpacking</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../cluster_ips/" class="nav-link">Cluster Ips</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../resharding/" class="nav-link">Resharding</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../CHANGELOG/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../cluster_ips/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#binpacking" class="nav-link">Binpacking</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#bin-packing" class="nav-link">Bin Packing</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#redis-cluster" class="nav-link">Redis Cluster</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#cobra" class="nav-link">Cobra</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#success" class="nav-link">Success !!</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#conclusion" class="nav-link">Conclusion</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="binpacking">Binpacking</h1>
+<p><img alt="picture" src="../santa_reindeer_fly_christmas.jpg" /></p>
+<h2 id="bin-packing">Bin Packing</h2>
+<p>The <a href="https://en.wikipedia.org/wiki/Bin_packing_problem">bin packing problem</a> is about optimizing the distribution of weighted items to bins. Multiple variants exist, but our focus in this post is on distributing weights into a fixed number of bins. I like to think about Santa Claus getting ready to deliver presents the day before Christmas, and having his elves preparing the reindeers' carriages. We will imagine that many carriages are ready to be used, and that Santa will jump to a new one once he has delivered all the presents in his carriage.</p>
+<p>The question is: <em>Depending on the size of the presents boxes, how should we distribute the load so that each carriage is as evenly distributed as possible</em>? Luckily a Python <a href="https://pypi.org/project/binpacking/">library</a> exists for this algorithm (as always?) and the library interface is very simple and clear, as it uses Python dictionaries.</p>
+<pre><code># We have 6 presents
+b = { 'a': 10, 'b': 10, 'c':11, 'd':1, 'e': 2,'f':7 } # [name, weight] pairs, in a dictionary
+
+# We want to pack them into 4 bins
+# Assign each pair to its own bin, and return the list of bins as a result
+bins = binpacking.to_constant_bin_number(b, 4)
+
+# Print the result. Excuse the ugly uppercase Bin, but bin is a reserved function in Python
+for Bin in bins:
+    # We will print the sum of all the weights in the bin, along with the bin itself
+    print(sum(Bin.values()), Bin)
+</code></pre>
+
+<p>Executing this program prints this on the console:</p>
+<pre><code>11 {'c': 11}
+10 {'b': 10}
+10 {'a': 10}
+10 {'f': 7, 'e': 2, 'd': 1}
+</code></pre>
+
+<p>We have 4 bins with a weight of 10 or 11, so things are pretty well distributed. Now imagine that we were cycling through each objects in our original list of items b, and <em>picking the destination bin randomly</em>. The following program does that.</p>
+<pre><code>bins = [{} for _ in range(4)]     # Create 4 bins, each bin is a list of dictionaries
+
+for name, weight in b.items():
+    binIdx = random.randint(0,3)  # pick a random integer between 0 and 3
+    bins[binIdx][name] = weight   # insert a 'present' into a bin
+</code></pre>
+
+<p>Let's run this 3 times.</p>
+<pre><code># First try
+9 {'e': 2, 'f': 7}
+1 {'d': 1}
+31 {'a': 10, 'b': 10, 'c': 11}
+0 {}
+
+# Second try
+12 {'a': 10, 'e': 2}
+18 {'c': 11, 'f': 7}
+11 {'b': 10, 'd': 1}
+0 {}
+
+# Third try
+0 {}
+22 {'b': 10, 'c': 11, 'd': 1}
+2 {'e': 2}
+17 {'a': 10, 'f': 7}
+</code></pre>
+
+<p>This is pretty terrible; however, this is what randomly picking an item will give you.</p>
+<h2 id="redis-cluster">Redis Cluster</h2>
+<p>To quote its documentation, <em>Redis Cluster provides a way to run a Redis installation where data is automatically sharded across multiple Redis nodes</em>. <a href="https://redis.io/topics/cluster-tutorial">Redis cluster</a> isn't only about sharding, but this is what we will focus on.</p>
+<p>Every time you store something in Redis Cluster, it all starts by hashing the key of your object with a CRC16, modulo something, and then assigning a hash value to a slot, called a <em>hash slot</em>. There are 16384 hash slots in Redis Cluster. A good hash function should map the expected inputs as evenly as possible over its output range; that is 16384 hash slots in our case. That property is called <a href="https://en.wikipedia.org/wiki/Hash_function#Uniformity">uniformity</a>.</p>
+<p>Each node in a cluster is responsible for a range of hash slots, and that assignment is usually done automatically early on, but the power of this system is that the assignment can be manual as well. If you know of a great way to distribute your hash slots to nodes, you can arrange for an optimal load balancing, and keep each Redis node as busy as possible.</p>
+<p><img src="hash_slots.png" /></p>
+<p><strong>Just like you wouldn't want to have some reindeer do more work than others, you would not want some Redis machine have little work to do, while others are crazy busy</strong>.</p>
+<h2 id="cobra">Cobra</h2>
+<p><a href="https://github.com/machinezone/cobra">Cobra</a> is a real-time messaging system,
+which we mainly use at <a href="https://www.mz.com/">Machine Zone</a> for analytics. It
+uses Redis internally, and store metrics events as JSON blobs into redis
+streams.</p>
+<p>Cobra internally keeps statistics about all channels, which helps us know which
+ones are high frequency. This is displayed in the table below, along the Redis
+hash slot for a given channel name. Notice that the CRC16 assigns unique
+hash values for all our sample keys. We can also see that the distribution of published
+items by channel name is uneven. If we were to randomly pick a channel and have
+it processed by a random Redis node, <em>that would lead to inefficiencies</em>.</p>
+<pre><code>Channel name                                Published items         Redis Hash Slot
+------------                                ---------------         ---------------
+niso_engine_crash_id                                     16                    1732
+niso_engine_fps_id                                    46889                    6454
+niso_engine_graphics_device_info                       4284                    4050
+niso_engine_lifecycle_id                              13444                     803
+niso_engine_memory_used_id                            46745                     754
+niso_engine_memory_warning_id                         14714                    3791
+niso_engine_message_loop_id                            4251                    4152
+niso_engine_net_request_error_id                       4356                   14143
+niso_engine_net_request_id                           677400                    6417
+niso_engine_net_traffic_id                             4322                    7208
+niso_engine_payload_id                               163277                   11316
+niso_engine_performance_metrics_id                     5585                    7132
+niso_engine_rml_load_document_metrics_id             360998                    2476
+niso_engine_rml_navigation_id                        485541                   14863
+niso_engine_rocket_log_id                              3811                    9883
+niso_engine_selfupdate_storage_error_id                   2                    4959
+niso_engine_set_asset_build_id                         4339                    6884
+niso_engine_set_cdn_idx_id                             4392                   15400
+niso_game_chat_events_id                               9307                    6629
+niso_game_logging_id                                    685                    3247
+niso_game_lua_health_id                              176710                   15535
+niso_game_lua_health_mem_warning                        264                   16311
+niso_game_lua_health_minutes                          43157                     687
+niso_game_lua_health_threshold                         2410                    6831
+niso_game_noisytypes_id                              103027                   15422
+niso_game_pubsub_events_id                             8701                    2221
+niso_game_unexpected_termination_id                     518                    7627
+niso_game_user_actions_id                                46                    7092
+niso_sms_set_rate_control_id                              7                    3113
+</code></pre>
+
+<p>Let's try to do the channel to hash slot assignment randomly, as it would be done if we were not assigning hash slots to Redis nodes manually.</p>
+<h3 id="random-distribution-1">Random distribution 1</h3>
+<pre><code>537399 {'niso_engine_rml_navigation_id': 485541, 'niso_game_lua_health_minutes': 43157, 'niso_game_pubsub_events_id': 8701}
+667035 {'niso_engine_crash_id': 16, 'niso_engine_graphics_device_info': 4284, 'niso_engine_memory_warning_id': 14714, 'niso_engine_net_request_error_id': 4356, 'niso_engine_rml_load_document_metrics_id': 360998, 'niso_engine_selfupdate_storage_error_id': 2, 'niso_game_lua_health_id': 176710, 'niso_game_lua_health_threshold': 2410, 'niso_game_noisytypes_id': 103027, 'niso_game_unexpected_termination_id': 518}
+59884 {'niso_engine_memory_used_id': 46745, 'niso_engine_message_loop_id': 4251, 'niso_engine_rocket_log_id': 3811, 'niso_engine_set_asset_build_id': 4339, 'niso_game_logging_id': 685, 'niso_game_user_actions_id': 46, 'niso_sms_set_rate_control_id': 7}
+924880 {'niso_engine_fps_id': 46889, 'niso_engine_lifecycle_id': 13444, 'niso_engine_net_request_id': 677400, 'niso_engine_net_traffic_id': 4322, 'niso_engine_payload_id': 163277, 'niso_engine_performance_metrics_id': 5585, 'niso_engine_set_cdn_idx_id': 4392, 'niso_game_chat_events_id': 9307, 'niso_game_lua_health_mem_warning': 264}
+stdev 376758.0808394682
+</code></pre>
+
+<p>We will represent this visually, using a pie chart. The excellent <a href="https://matplotlib.org/">matplotlib</a> library can plot this for us.</p>
+<pre><code>labels = ['1', '2', '3', '4']
+S = sum(weights)
+sizes = [100 * weight / S for weight in weights]
+colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral']
+patches, texts = plt.pie(sizes, colors=colors, shadow=True, startangle=90)
+plt.legend(patches, labels, loc=&quot;best&quot;)
+plt.axis('equal')
+plt.tight_layout()
+plt.show()
+</code></pre>
+
+<p><img src="random_1_pie_chart.png" /></p>
+<p>This isn't a great distribution. Node 3 got very few hash slots assigned, while Node 4 seems to do too much work.</p>
+<h3 id="random-distribution-2">Random distribution 2</h3>
+<pre><code>821388 {'niso_engine_message_loop_id': 4251, 'niso_engine_payload_id': 163277, 'niso_engine_performance_metrics_id': 5585, 'niso_engine_rml_load_document_metrics_id': 360998, 'niso_engine_set_cdn_idx_id': 4392, 'niso_game_logging_id': 685, 'niso_game_lua_health_id': 176710, 'niso_game_lua_health_threshold': 2410, 'niso_game_noisytypes_id': 103027, 'niso_game_user_actions_id': 46, 'niso_sms_set_rate_control_id': 7}
+75311 {'niso_engine_memory_warning_id': 14714, 'niso_engine_net_traffic_id': 4322, 'niso_engine_rocket_log_id': 3811, 'niso_game_chat_events_id': 9307, 'niso_game_lua_health_minutes': 43157}
+1274894 {'niso_engine_crash_id': 16, 'niso_engine_fps_id': 46889, 'niso_engine_lifecycle_id': 13444, 'niso_engine_memory_used_id': 46745, 'niso_engine_net_request_id': 677400, 'niso_engine_rml_navigation_id': 485541, 'niso_engine_selfupdate_storage_error_id': 2, 'niso_engine_set_asset_build_id': 4339, 'niso_game_unexpected_termination_id': 518}
+17605 {'niso_engine_graphics_device_info': 4284, 'niso_engine_net_request_error_id': 4356, 'niso_game_lua_health_mem_warning': 264, 'niso_game_pubsub_events_id': 8701}
+stdev 493807.17986663507
+</code></pre>
+
+<p><img src="random_2_pie_chart.png" /></p>
+<p>This one is even worse; Node 3 got assigned a lot of slots, pretty bad. Ideally we would want to see a pie chart with four somewhat equal quadrants.</p>
+<p>However, if we can find in which hash slot each channel traffic will land, and use the published count as a weight for that channel, <strong>we can allocate that channel to be handled by a Redis Cluster node using the Bin Packing algorithm</strong>. This will give us a more <strong>fair or optimal</strong> load balancing.</p>
+<p>2 Redis commands are required to do that:</p>
+<ul>
+<li>The <a href="https://redis.io/commands/cluster-keyslot">CLUSTER KEYSLOT</a> command run the CRC16 hash on a key.</li>
+<li>The <a href="https://redis.io/commands/cluster-keyslot">CLUSTER SETSLOT</a> command will be used to allocate a hash slot to a Redis cluster node. Practically speaking, it is easier to use the redis-cli command which can do that for us, and handle the resharding better. Here are all the things that the CLI can do for you.</li>
+</ul>
+<pre><code>$ redis-cli --cluster help
+Cluster Manager Commands:
+  create         host1:port1 ... hostN:portN
+                 --cluster-replicas &lt;arg&gt;
+  check          host:port
+                 --cluster-search-multiple-owners
+  info           host:port
+  fix            host:port
+                 --cluster-search-multiple-owners
+  reshard        host:port
+                 --cluster-from &lt;arg&gt;
+                 --cluster-to &lt;arg&gt;
+                 --cluster-slots &lt;arg&gt;
+                 --cluster-yes
+                 --cluster-timeout &lt;arg&gt;
+                 --cluster-pipeline &lt;arg&gt;
+                 --cluster-replace
+  rebalance      host:port
+                 --cluster-weight &lt;node1=w1...nodeN=wN&gt;
+                 --cluster-use-empty-masters
+                 --cluster-timeout &lt;arg&gt;
+                 --cluster-simulate
+                 --cluster-pipeline &lt;arg&gt;
+                 --cluster-threshold &lt;arg&gt;
+                 --cluster-replace
+  add-node       new_host:new_port existing_host:existing_port
+                 --cluster-slave
+                 --cluster-master-id &lt;arg&gt;
+  del-node       host:port node_id
+  call           host:port command arg arg .. arg
+  set-timeout    host:port milliseconds
+  import         host:port
+                 --cluster-from &lt;arg&gt;
+                 --cluster-copy
+                 --cluster-replace
+  help
+</code></pre>
+
+<p>Back to the bin-packing algorithm, let's see how it performs on our own real data set, which is a less contrived than the one we used in our first example.</p>
+<h3 id="bin-packing-distribution">Bin packing distribution</h3>
+<pre><code>677400 {'niso_engine_net_request_id': 677400}
+503781 {'niso_engine_rml_navigation_id': 485541, 'niso_game_pubsub_events_id': 8701, 'niso_engine_set_asset_build_id': 4339, 'niso_engine_message_loop_id': 4251, 'niso_game_logging_id': 685, 'niso_game_lua_health_mem_warning': 264}
+503736 {'niso_engine_rml_load_document_metrics_id': 360998, 'niso_engine_fps_id': 46889, 'niso_engine_memory_used_id': 46745, 'niso_engine_memory_warning_id': 14714, 'niso_engine_lifecycle_id': 13444, 'niso_game_chat_events_id': 9307, 'niso_engine_net_request_error_id': 4356, 'niso_engine_graphics_device_info': 4284, 'niso_game_lua_health_threshold': 2410, 'niso_game_unexpected_termination_id': 518, 'niso_game_user_actions_id': 46, 'niso_engine_crash_id': 16, 'niso_sms_set_rate_control_id': 7, 'niso_engine_selfupdate_storage_error_id': 2}
+504281 {'niso_game_lua_health_id': 176710, 'niso_engine_payload_id': 163277, 'niso_game_noisytypes_id': 103027, 'niso_game_lua_health_minutes': 43157, 'niso_engine_performance_metrics_id': 5585, 'niso_engine_set_cdn_idx_id': 4392, 'niso_engine_net_traffic_id': 4322, 'niso_engine_rocket_log_id': 3811}
+</code></pre>
+
+<p>Our 4 bins receive around 500,000 units of weight each. If we visualize this with a pie chart, this feels like a pretty fair repartition.</p>
+<p><img src="bin_packing_pie_chart.png" /></p>
+<h2 id="success">Success !!</h2>
+<p><img src="success.jpg" /></p>
+<h2 id="conclusion">Conclusion</h2>
+<p>If you can <em>efficiently analyze your key space</em>, the <em>flexible</em> Redis Cluster hash slot design lets you do wonders and achieve an excellent <em>load balancing</em>. This leads to less CPU cycles burnt for nothing, which leads to melting the ice cap perhaps a bit more slowly, which in turn lets Santa live the life to which he is accustomed to in the North Pole for the foreseeable future.</p>
+<p><img src="happy_santa.jpg" /></p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form>
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
