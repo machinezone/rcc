@@ -98,6 +98,7 @@
                     <div class="col-md-9" role="main">
 
 <h1 id="resharding">Resharding</h1>
+<p><img alt="picture" src="../pie.jpg" /></p>
 <h2 id="using-rcc-to-reshard-a-redis-cluster-using-keyspace-notification">Using rcc to reshard a redis cluster using keyspace notification</h2>
 <p><a href="https://github.com/machinezone/rcc/">rcc</a> comes with 2 important tools, one for analyzing the keys access accross nodes, built on top of <a href="https://redis.io/topics/notifications">redis keyspace notifications</a> (which in turns runs on top of redis PubSub). The instrumentation is done over a period of time to sample the key access patterns. A 'weights' file is created as part of this tool. That file is saved in the current working directory by default. It is a very simple csv file that show how often a key is accessed. Currently rcc only support tracking <em>XADD</em> redis commands.</p>
 <pre><code>$ head weights.csv
