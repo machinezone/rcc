@@ -98,10 +98,6 @@
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-level="2"><a href="#success" class="nav-link">Success !!</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
             <li class="nav-item" data-level="2"><a href="#conclusion" class="nav-link">Conclusion</a>
               <ul class="nav flex-column">
               </ul>
@@ -171,7 +167,7 @@ for name, weight in b.items():
 <p>To quote its documentation, <em>Redis Cluster provides a way to run a Redis installation where data is automatically sharded across multiple Redis nodes</em>. <a href="https://redis.io/topics/cluster-tutorial">Redis cluster</a> isn't only about sharding, but this is what we will focus on.</p>
 <p>Every time you store something in Redis Cluster, it all starts by hashing the key of your object with a CRC16, modulo something, and then assigning a hash value to a slot, called a <em>hash slot</em>. There are 16384 hash slots in Redis Cluster. A good hash function should map the expected inputs as evenly as possible over its output range; that is 16384 hash slots in our case. That property is called <a href="https://en.wikipedia.org/wiki/Hash_function#Uniformity">uniformity</a>.</p>
 <p>Each node in a cluster is responsible for a range of hash slots, and that assignment is usually done automatically early on, but the power of this system is that the assignment can be manual as well. If you know of a great way to distribute your hash slots to nodes, you can arrange for an optimal load balancing, and keep each Redis node as busy as possible.</p>
-<p><img src="hash_slots.png" /></p>
+<p><img alt="picture" src="../hash_slots.png" /></p>
 <p><strong>Just like you wouldn't want to have some reindeer do more work than others, you would not want some Redis machine have little work to do, while others are crazy busy</strong>.</p>
 <h2 id="cobra">Cobra</h2>
 <p><a href="https://github.com/machinezone/cobra">Cobra</a> is a real-time messaging system,
@@ -238,7 +234,7 @@ plt.tight_layout()
 plt.show()
 </code></pre>
 
-<p><img src="random_1_pie_chart.png" /></p>
+<p><img alt="picture" src="../random_1_pie_chart.png" /></p>
 <p>This isn't a great distribution. Node 3 got very few hash slots assigned, while Node 4 seems to do too much work.</p>
 <h3 id="random-distribution-2">Random distribution 2</h3>
 <pre><code>821388 {'niso_engine_message_loop_id': 4251, 'niso_engine_payload_id': 163277, 'niso_engine_performance_metrics_id': 5585, 'niso_engine_rml_load_document_metrics_id': 360998, 'niso_engine_set_cdn_idx_id': 4392, 'niso_game_logging_id': 685, 'niso_game_lua_health_id': 176710, 'niso_game_lua_health_threshold': 2410, 'niso_game_noisytypes_id': 103027, 'niso_game_user_actions_id': 46, 'niso_sms_set_rate_control_id': 7}
@@ -248,7 +244,7 @@ plt.show()
 stdev 493807.17986663507
 </code></pre>
 
-<p><img src="random_2_pie_chart.png" /></p>
+<p><img alt="picture" src="../random_2_pie_chart.png" /></p>
 <p>This one is even worse; Node 3 got assigned a lot of slots, pretty bad. Ideally we would want to see a pie chart with four somewhat equal quadrants.</p>
 <p>However, if we can find in which hash slot each channel traffic will land, and use the published count as a weight for that channel, <strong>we can allocate that channel to be handled by a Redis Cluster node using the Bin Packing algorithm</strong>. This will give us a more <strong>fair or optimal</strong> load balancing.</p>
 <p>2 Redis commands are required to do that:</p>
@@ -303,12 +299,10 @@ Cluster Manager Commands:
 </code></pre>
 
 <p>Our 4 bins receive around 500,000 units of weight each. If we visualize this with a pie chart, this feels like a pretty fair repartition.</p>
-<p><img src="bin_packing_pie_chart.png" /></p>
-<h2 id="success">Success !!</h2>
-<p><img src="success.jpg" /></p>
+<p><img alt="picture" src="../bin_packing_pie_chart.png" /></p>
 <h2 id="conclusion">Conclusion</h2>
 <p>If you can <em>efficiently analyze your key space</em>, the <em>flexible</em> Redis Cluster hash slot design lets you do wonders and achieve an excellent <em>load balancing</em>. This leads to less CPU cycles burnt for nothing, which leads to melting the ice cap perhaps a bit more slowly, which in turn lets Santa live the life to which he is accustomed to in the North Pole for the foreseeable future.</p>
-<p><img src="happy_santa.jpg" /></p></div>
+<p><img alt="picture" src="../happy_santa.jpg" /></p></div>
             </div>
         </div>
 
