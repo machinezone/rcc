@@ -43,7 +43,7 @@ isort:
 	isort `find rcc tests -name '*.py'`
 
 release:
-	git commit -am 'bump' ; git push ; make upload
+	git push ; make upload
 
 # this is helpful to remove trailing whitespaces
 trail:
