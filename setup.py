@@ -15,9 +15,20 @@ if sys.version_info[:2] < (3, 7):
 
 ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__)))
 
-with open(os.path.join(ROOT, "DOCKER_VERSION")) as f:
-    VERSION = f.read().strip()
 
+def computeVersion():
+    fullVersion = os.popen('git describe', 'r').read().splitlines()[0]
+    assert fullVersion[0] == 'v'
+
+    parts = fullVersion.split('-')
+    majorMinor = parts[0][1:]
+    patch = parts[1]
+
+    version = f'{majorMinor}.{patch}'
+    return version
+
+
+VERSION = computeVersion()
 
 dev_requires = ["wheel", "isort", "mypy", "twine", "black", "pre-commit"]
 

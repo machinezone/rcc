@@ -36,4 +36,5 @@ def keyspace(redis_urls, port, redis_password, timeout, path, quiet):
     # for node, access in sorted(result['nodes'].items()):
     #    print(node, access)
 
+    asciiPlot('Commands', keySpace.commands)
     asciiPlot('Nodes', keySpace.nodes)
