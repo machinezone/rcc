@@ -4,7 +4,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import asyncio
-import rapidjson as json
+import json
 import logging
 import re
 import traceback
