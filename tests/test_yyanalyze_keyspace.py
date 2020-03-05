@@ -11,6 +11,9 @@ from rcc.client import RedisClient
 
 
 async def coro():
+    '''The caveat with this test is that external clients could
+    be hitting redis as well, and we would get notifications for that
+    '''
     redisUrl = 'redis://localhost:6379'
     redisClient = RedisClient(redisUrl, '')
 
@@ -41,6 +44,9 @@ async def coro():
     weights = keySpace.keys
     print('weights', weights)
     assert len(weights) >= 50
+
+    # Make sure we did capture one xadd
+    assert 'xadd' in keySpace.commands
 
     # cleanup
     for key in keys:

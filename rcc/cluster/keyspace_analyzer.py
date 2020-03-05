@@ -16,6 +16,7 @@ class KeySpace(object):
         self.notifications = 0
         self.keys = collections.defaultdict(int)
         self.nodes = collections.defaultdict(int)
+        self.commands = collections.defaultdict(int)
 
 
 # FIXME: make this a utility
@@ -43,8 +44,11 @@ async def analyzeKeyspace(redisUrlsStr: str, timeout: int, progress: bool = True
     else:
         clients = [RedisClient(url, '') for url in redisUrls]
 
-    cmds = 'xadd'
-    keyspaceConfig = 'KEAt'
+    #
+    # E for Keyevent events, published with __keyevent@<db>__ prefix.
+    # A Alias for g$lshztxe, to catch all events
+    #
+    keyspaceConfig = 'AE'
 
     async def cb(client, obj, message):
         if obj.progress:
@@ -54,13 +58,13 @@ async def analyzeKeyspace(redisUrlsStr: str, timeout: int, progress: bool = True
         msg = message[2].decode()
         _, _, cmd = msg.partition(':')
 
-        if cmd in cmds:
-            key = message[3].decode()
-            obj.keys[key] += 1
-            obj.notifications += 1
+        key = message[3].decode()
+        obj.keys[key] += 1
+        obj.notifications += 1
 
-            node = f'{client.host}:{client.port}'
-            obj.nodes[node] += 1
+        node = f'{client.host}:{client.port}'
+        obj.nodes[node] += 1
+        obj.commands[cmd] += 1
 
     tasks = []
 
@@ -103,6 +107,7 @@ async def analyzeKeyspace(redisUrlsStr: str, timeout: int, progress: bool = True
     print()
     print(f'notifications {keySpace.notifications}')
     print(f'accessed keys {keySpace.keys}')
+    print(f'commands {keySpace.commands}')
     print(f'nodes {keySpace.nodes}')
 
     return keySpace

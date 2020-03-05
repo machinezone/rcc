@@ -13,3 +13,5 @@ coverage.xml
 .env
 site/
 weights.csv
+.eggs
+build
