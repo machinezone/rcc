@@ -7,6 +7,8 @@ import asyncio
 import collections
 import csv
 import sys
+import statistics
+
 from rcc.client import RedisClient
 
 
@@ -18,6 +20,26 @@ class KeySpace(object):
         self.nodes = collections.defaultdict(int)
         self.commands = collections.defaultdict(int)
 
+    def describe(self):
+        print(f'notifications {self.notifications}')
+        print(f'accessed keys {self.keys}')
+        print(f'commands {self.commands}')
+        print(f'nodes {self.nodes}')
+
+        if len(self.nodes) > 1:
+            self.describeData('Nodes', self.nodes)
+        print()
+
+    def describeData(self, title, data):
+        print(f'== {title} ==')
+        print('Mean', statistics.mean(data.values()))
+        print('Median', statistics.median(data.values()))
+        print('Stddev', statistics.stdev(data.values()))
+        print(
+            'Stddev/Mean',
+            statistics.stdev(data.values()) / statistics.mean(data.values()),
+        )
+
 
 # FIXME: make this a utility
 def makeClientfromNode(node):
@@ -25,7 +47,9 @@ def makeClientfromNode(node):
     return RedisClient(url, '')  # FIXME password
 
 
-async def analyzeKeyspace(redisUrlsStr: str, timeout: int, progress: bool = True):
+async def analyzeKeyspace(
+    redisUrlsStr: str, timeout: int, progress: bool = True, count: int = -1
+):
     pattern = '__key*__:*'
 
     redisUrls = redisUrlsStr.split(';')
@@ -87,8 +111,12 @@ async def analyzeKeyspace(redisUrlsStr: str, timeout: int, progress: bool = True
             task = asyncio.create_task(client.psubscribe(pattern, cb, keySpace))
             tasks.append(task)
 
-        # Monitor during X seconds
-        await asyncio.sleep(timeout)
+        if count > 0:
+            while keySpace.notifications < count:
+                await asyncio.sleep(0.1)
+        else:
+            # Monitor during X seconds
+            await asyncio.sleep(timeout)
 
         for task in tasks:
             # Cancel the tasks
@@ -103,12 +131,7 @@ async def analyzeKeyspace(redisUrlsStr: str, timeout: int, progress: bool = True
             await client.send('CONFIG', 'SET', 'notify-keyspace-events', conf)
 
     # FIXME: note how many things
-
-    print()
-    print(f'notifications {keySpace.notifications}')
-    print(f'accessed keys {keySpace.keys}')
-    print(f'commands {keySpace.commands}')
-    print(f'nodes {keySpace.nodes}')
+    keySpace.describe()
 
     return keySpace
 
