@@ -120,7 +120,7 @@ Cobra uses consistent hashing to compute a shard/node id. The distribution of lo
 ```
 
 Mean     | Median   | Stddev  | Stddev/Mean
-------------------- | ------- | -------------
+-------- | -------- | ------- | -------------
 500326.6 | 387397.0 | 265549  | 0.530
 
 The standard deviation is very high. Some nodes do way more work than others.
@@ -140,8 +140,8 @@ The standard deviation is very high. Some nodes do way more work than others.
  172.25.225.42:6379 [341379] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
 ```
 
-Mean     | Median   | Stddev | Stddev/Mean
-------------------- | ------- | -------------
+Mean     | Median   | Stddev  | Stddev/Mean
+-------- | -------- | ------- | -------------
 555652   | 409835   | 217322  | 0.391
 
 The standard deviation decreased from 265500 to 217322, the ratio between the standard deviation and the mean is smaller.
@@ -162,7 +162,7 @@ The standard deviation decreased from 265500 to 217322, the ratio between the st
 ```
 
 Mean     | Median   | Stddev  | Stddev/Mean
-------------------- | ------- | -------------
+-------- | -------- | ------- | -------------
 556003   | 560954   | 45278   | 0.081
 
 Visually we can see that the distribution is very well balanced. The Stddev/Mean ratio decreased by a factor of 6.5 (0.530 / 0.81).
