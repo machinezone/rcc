@@ -33,6 +33,9 @@ async def subscriber(
         print(f'Got {item}')
 
 
+# rcc sub --redis_url redis://localhost:7379 --channel foo
+
+
 @click.command()
 @click.option('--redis_url', default='redis://localhost')
 @click.option('--redis_password')
@@ -40,11 +43,7 @@ async def subscriber(
 @click.option('--pattern')
 @click.option('--timeout', default=360)
 def sub(redis_url, redis_password, channel, pattern, timeout):
-    '''Subscribe to a channel
-
-    \b
-    rcc sub --redis_url redis://localhost:7379 --channel foo
-    '''
+    '''Subscribe (with PUBSUB) to a channel'''
 
     redisClient = RedisClient(redis_url, redis_password)
 

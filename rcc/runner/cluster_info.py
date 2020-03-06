@@ -44,22 +44,21 @@ def printRedisClusterInfo(redis_urls, stats, role):
     asyncio.run(printRedisClusterInfoCoro(redisClient, stats, role))
 
 
+# rcc cluster-info --stats instantaneous_input_kbps
+#
+# Example ones:
+#
+# * instantaneous_input_kbps
+# * instantaneous_output_kbps
+# * connected_clients
+# * used_memory_rss_human
+
+
 @click.command()
-@click.option('--redis_urls', default='redis://localhost:10000')
+@click.option('--redis_urls', '-r', default='redis://localhost:11000')
 @click.option('--stats', '-s', default=['redis_version'], multiple=True)
 @click.option('--role', '-r')
 def cluster_info(redis_urls, stats, role):
-    '''Monitor redis metrics
-
-    \b
-    rcc cluster-info --stats instantaneous_input_kbps
-
-    Example ones:
-
-    * instantaneous_input_kbps
-    * instantaneous_output_kbps
-    * connected_clients
-    * used_memory_rss_human
-    '''
+    '''Monitor redis metrics from the INFO command'''
 
     printRedisClusterInfo(redis_urls, stats, role)

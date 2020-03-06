@@ -11,14 +11,10 @@ from rcc.cluster.info import printRedisClusterInfoCoro
 
 
 @click.command()
-@click.option('--redis_urls', default='redis://localhost:11000')
-@click.option('--role', '-r')
+@click.option('--redis_urls', '-r', default='redis://localhost:11000')
+@click.option('--role')
 def cluster_nodes(redis_urls, role):
-    '''Monitor redis metrics
-
-    \b
-    rcc cluster-nodes
-    '''
+    '''Monitor redis metrics'''
 
     try:
         asyncio.run(printRedisClusterInfoCoro(redis_urls, role))

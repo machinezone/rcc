@@ -21,9 +21,13 @@ coloredlogs.install(level='WARNING', fmt=LOGGING_FORMAT)
 @click.version_option()
 def main(verbose):
     """\b
-RCC
+_______   ____  ____
+\\_  __ \\_/ ___\\/ ___\\
+ |  | \\/\\  \\__\\  \\___
+ |__|    \\___  >___  >
+             \\/    \\/
 
-Rcc is a Redis Cluster Client
+rcc / Redis Cluster Client / cli
     """
     if verbose:
         level = 'INFO' if verbose == 1 else 'DEBUG'

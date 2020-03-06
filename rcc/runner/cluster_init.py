@@ -44,4 +44,6 @@ def printRedisClusterInitCommand(service, port):
 @click.option('--service', default='redis-cluster')
 @click.option('--port', default=6379)
 def cluster_init(service, port):
+    '''Print a cluster init command for redis url defined in a kubernete endpoints'''
+
     printRedisClusterInitCommand(service, port)

@@ -32,7 +32,7 @@ async def pub(redis_url, redis_password, channel, random_channel, msg, batch, ma
 
 
 @click.command()
-@click.option('--redis_url', default='redis://localhost')
+@click.option('--redis_url', '-r', default='redis://localhost')
 @click.option('--port', '-p')
 @click.option('--redis_password')
 @click.option('--channel', default='foo')
@@ -43,7 +43,7 @@ async def pub(redis_url, redis_password, channel, random_channel, msg, batch, ma
 def publish(
     redis_url, port, redis_password, channel, random_channel, msg, batch, max_len
 ):
-    '''Publish to a channel
+    '''Publish (with XADD) to a channel
     '''
 
     if port is not None:

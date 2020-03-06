@@ -94,7 +94,6 @@ def printRedisClusterInfo(redis_urls, stats, role):
 @click.option('--service', default='redis-cluster')
 @click.option('--port', default=6379)
 def endpoints(service, port):
-    '''Print endpoints associated with a redis cluster service
-    '''
+    '''Print endpoints associated with a redis cluster service'''
 
     printEndpoints(service, port)

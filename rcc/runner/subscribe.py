@@ -54,17 +54,16 @@ class MessageHandlerClass(RedisSubscriberMessageHandlerClass):
         return True
 
 
+# rcc subscribe --redis_url redis://localhost:7379 --channel foo
+
+
 @click.command()
-@click.option('--redis_url', default='redis://localhost')
+@click.option('--redis_url', '-r', default='redis://localhost')
 @click.option('--redis_password')
 @click.option('--channel', default='foo')
 @click.option('--position')
 def subscribe(redis_url, redis_password, channel, position):
-    '''Subscribe to a channel
-
-    \b
-    rcc subscribe --redis_url redis://localhost:7379 --channel foo
-    '''
+    '''Subscribe (with XREAD) to a channel'''
 
     redisClient = RedisClient(redis_url, redis_password)
     runSubscriber(redisClient, channel, position, MessageHandlerClass)

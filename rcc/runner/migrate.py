@@ -36,4 +36,6 @@ async def runMigration(src_addr, dst_addr, slot, dry):
 @click.option('--dry', is_flag=True)
 @click.argument('slot')
 def migrate(src_addr, dst_addr, slot, dry):
+    '''Migrate one slot from a node to another one'''
+
     asyncio.run(runMigration(src_addr, dst_addr, slot, dry))
