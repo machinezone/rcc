@@ -13,7 +13,7 @@ DEFAULT_WEIGHTS_PATH = 'weights.csv'
 
 @click.command()
 @click.option('--port', default=6379)
-@click.option('--redis_url', default='redis://localhost:11000')
+@click.option('--redis_url', '-r', default='redis://localhost:11000')
 @click.option('--weight', '-w', required=True, default=DEFAULT_WEIGHTS_PATH)
 @click.option('--dry', is_flag=True)
 @click.option('--node_id')

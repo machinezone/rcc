@@ -10,6 +10,7 @@ import sys
 import statistics
 
 from rcc.client import RedisClient
+from rcc.cluster.reshard import makeClientfromNode
 
 
 class KeySpace(object):
@@ -39,12 +40,6 @@ class KeySpace(object):
             'Stddev/Mean',
             statistics.stdev(data.values()) / statistics.mean(data.values()),
         )
-
-
-# FIXME: make this a utility
-def makeClientfromNode(node):
-    url = f'redis://{node.ip}:{node.port}'
-    return RedisClient(url, '')  # FIXME password
 
 
 async def analyzeKeyspace(
