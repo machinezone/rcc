@@ -90,6 +90,18 @@ Here is how the previous cluster usage distribution looks after resharding for u
  172.26.32.220:6379 [495581] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
 ```
 
+## Installation
+
+If you are familiar with python or pip this should be easy.
+
+```
+cd $HOME # or anywhere you want
+python3 -mvenv venv
+source venv/bin/activate
+pip install rcc
+rcc
+```
+
 ## Random
 
 RCC is also the name of the [Redwood Childrens Center](http://redwoodchildrenscenter.com/). If you are looking for a great preschool in Redwood City, California, I highly recommend it.
