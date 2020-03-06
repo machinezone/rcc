@@ -15,6 +15,7 @@ return ret == 0
 '''
 
 import asyncio
+import collections
 import csv
 import logging
 import os
@@ -148,27 +149,33 @@ async def binPackingReshardCoroutine(
     masterClients = [makeClientfromNode(node) for node in masterNodes]
     binCount = len(masterNodes)
 
+    # Multiple keys could hash to the same hash-slot (collisions), so
+    # we need to feed to binpacking a list of [slot: weight], not
+    # a list of [key: weight]
+    hashSlotWeights = collections.defaultdict(int)
+    for key, weight in weights.items():
+        slot = getHashSlot(key)
+        hashSlotWeights[slot] += weight
+
     # Run the bin packing algorithm
-    bins = to_constant_bin_number(weights, binCount)
+    bins = to_constant_bin_number(hashSlotWeights, binCount)
 
-    slots = []
+    # A list of list of slots to migrate, for each node
+    allSlots = []
 
-    for binIdx, b in enumerate(bins):
-        binSlots = []
-
-        for key in b:
-            slot = getHashSlot(key)
-            binSlots.append(slot)
-
+    for b in bins:
+        # b is a dictionary of [name, weight] / name is the hash slot.
+        # we want to sort by hash slot to make this process deterministic
+        binSlots = [slot for slot in b.keys()]
         binSlots.sort()
-        slots.append(binSlots)
+        allSlots.append(binSlots)
 
     # We need to know where each slots lives
     slotToNodes = await getSlotsToNodesMapping(redis_urls)
 
     totalMigratedSlots = 0
 
-    for binSlots, node in zip(slots, masterNodes):
+    for binSlots, node in zip(allSlots, masterNodes):
 
         print(f'== {node.node_id} / {node.ip}:{node.port} ==')
         migratedSlots = 0
