@@ -7,7 +7,10 @@ def computeVersion():
 
     parts = fullVersion.split('-')
     majorMinor = parts[0][1:]
-    patch = parts[1]
+    if len(parts) > 1:
+        patch = parts[1]
+    else:
+        patch = 0
 
     version = f'{majorMinor}.{patch}'
     return version
