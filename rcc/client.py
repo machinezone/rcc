@@ -195,7 +195,7 @@ class RedisClient(ClusterCommandsMixin, PubSubCommandsMixin):
                 # we should optimize this for the common case
                 connection = await self.getConnection(key)
 
-                await connection.send(cmd, key, *args)
+                await connection.send(cmd, *args)
                 response = await self.readResponse(connection)
 
                 responseType = type(response)

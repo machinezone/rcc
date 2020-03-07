@@ -12,7 +12,7 @@ import uuid
 from rcc.cluster.init_cluster import runNewCluster
 from rcc.cluster.keyspace_analyzer import analyzeKeyspace
 from rcc.cluster.reshard import binPackingReshardCoroutine
-from rcc.cluster.info import getClusterSignature
+from rcc.cluster.info import getClusterSignature, runRedisCliClusterCheck
 
 from test_utils import makeClient
 
@@ -36,19 +36,14 @@ async def checkStrings(client):
     assert not exists
 
 
-async def runRedisCliClusterCheck(port):
-    cmd = f'redis-cli --cluster check localhost:{port}'
-
-    proc = await asyncio.create_subprocess_shell(cmd)
-    stdout, stderr = await proc.communicate()
-
-
 async def coro():
     root = tempfile.mkdtemp()
     clusterReadyFile = os.path.join(root, 'redis_cluster_ready')
     startPort = 12000
     redisUrl = f'redis://localhost:{startPort}'
-    task = asyncio.create_task(runNewCluster(root, startPort, size=3))
+    size = 3
+    redisPassword = ''
+    task = asyncio.create_task(runNewCluster(root, startPort, size, redisPassword))
 
     # Wait until cluster is initialized
     while not os.path.exists(clusterReadyFile):
@@ -58,7 +53,7 @@ async def coro():
     await checkStrings(client)
 
     # now analyze keyspace for 3 seconds
-    task = asyncio.create_task(analyzeKeyspace(redisUrl, 3))
+    task = asyncio.create_task(analyzeKeyspace(redisUrl, redisPassword, 3))
 
     # wait a tiny bit so that the analyzer is ready
     # (it needs to make a couple of pubsub subscriptions)
@@ -89,20 +84,24 @@ async def coro():
     weights = keySpace.keys
 
     print('weights', weights)
-    signature, balanced, fullCoverage = await getClusterSignature(redisUrl)
+    signature, balanced, fullCoverage = await getClusterSignature(
+        redisUrl, redisPassword
+    )
     assert balanced
     assert fullCoverage
 
-    ret = await binPackingReshardCoroutine(redisUrl, weights, timeout=15)
+    ret = await binPackingReshardCoroutine(redisUrl, redisPassword, weights, timeout=15)
     assert ret
 
-    newSignature, balanced, fullCoverage = await getClusterSignature(redisUrl)
+    newSignature, balanced, fullCoverage = await getClusterSignature(
+        redisUrl, redisPassword
+    )
     assert signature != newSignature
     assert balanced
     assert fullCoverage
 
     # Now run cluster check
-    await runRedisCliClusterCheck(startPort)
+    await runRedisCliClusterCheck(startPort, redisPassword)
 
     # Validate that we can read back what we wrote, after resharding
     for i in range(1, 100):
@@ -116,7 +115,7 @@ async def coro():
 
     # Do another reshard. This one should be a no-op
     # This should return statistics about the resharding
-    await binPackingReshardCoroutine(redisUrl, weights, timeout=15)
+    await binPackingReshardCoroutine(redisUrl, redisPassword, weights, timeout=15)
 
 
 def test_reshard():

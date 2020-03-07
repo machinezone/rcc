@@ -10,9 +10,9 @@ import click
 from rcc.cluster.info import clusterCheck
 
 
-async def checkCluster(redis_urls):
+async def checkCluster(redisUrl, redisPassword):
     try:
-        ok = await clusterCheck(redis_urls)
+        ok = await clusterCheck(redisUrl, redisPassword)
     except Exception as e:
         logging.error(f'checkCluster error: {e}')
         return
@@ -25,8 +25,9 @@ async def checkCluster(redis_urls):
 
 @click.command()
 @click.option('--redis_url', '-r', default='redis://localhost:11000')
-def cluster_check(redis_url):
+@click.option('--password', '-a')
+def cluster_check(redis_url, password):
     '''Make sure all nodes have the same view of the cluster
     '''
 
-    asyncio.run(checkCluster(redis_url))
+    asyncio.run(checkCluster(redis_url, password))

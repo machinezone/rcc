@@ -10,7 +10,8 @@ import tabulate
 from rcc.client import RedisClient
 
 
-async def printRedisClusterInfoCoro(redisClient, stats, role=None):
+async def printRedisClusterInfoCoro(redisUrl, redisPassword, stats, role=None):
+    redisClient = RedisClient(redisUrl, redisPassword)
     nodes = await redisClient.cluster_nodes()
 
     clients = []
@@ -19,7 +20,7 @@ async def printRedisClusterInfoCoro(redisClient, stats, role=None):
             continue
 
         url = f'redis://{node.ip}:{node.port}'
-        client = RedisClient(url, '')
+        client = RedisClient(url, redisPassword)
         clients.append((node, client))
 
     while True:
@@ -39,11 +40,6 @@ async def printRedisClusterInfoCoro(redisClient, stats, role=None):
         await asyncio.sleep(1)
 
 
-def printRedisClusterInfo(redis_urls, stats, role):
-    redisClient = RedisClient(redis_urls, '')
-    asyncio.run(printRedisClusterInfoCoro(redisClient, stats, role))
-
-
 # rcc cluster-info --stats instantaneous_input_kbps
 #
 # Example ones:
@@ -55,10 +51,11 @@ def printRedisClusterInfo(redis_urls, stats, role):
 
 
 @click.command()
-@click.option('--redis_urls', '-r', default='redis://localhost:11000')
+@click.option('--redis_url', '-r', default='redis://localhost:11000')
+@click.option('--redis_password', '-a')
 @click.option('--stats', '-s', default=['redis_version'], multiple=True)
 @click.option('--role', '-r')
-def cluster_info(redis_urls, stats, role):
+def cluster_info(redis_url, redis_password, stats, role):
     '''Monitor redis metrics from the INFO command'''
 
-    printRedisClusterInfo(redis_urls, stats, role)
+    asyncio.run(printRedisClusterInfoCoro(redis_url, redis_password, stats, role))

@@ -15,10 +15,11 @@ async def coro():
     be hitting redis as well, and we would get notifications for that
     '''
     redisUrl = 'redis://localhost:6379'
-    redisClient = RedisClient(redisUrl, '')
+    redisPassword = ''
+    redisClient = RedisClient(redisUrl, redisPassword)
 
     # now analyze keyspace for 2 seconds
-    task = asyncio.create_task(analyzeKeyspace(redisUrl, 2))
+    task = asyncio.create_task(analyzeKeyspace(redisUrl, redisPassword, 2))
 
     # wait a tiny bit so that the analyzer is ready
     # (it needs to make a couple of pubsub subscriptions)

@@ -58,7 +58,7 @@ class Connection(object):
 
         if self.password:
             # FIXME: need AUTH error checking
-            await self.auth(self.password)
+            await self.send('AUTH', self.password)
 
         if self.multiplexing:
             self.pubSubEvent = asyncio.Event()
@@ -164,8 +164,7 @@ class Connection(object):
 
         buf.write(b'\r\n')
 
-    async def send(self, cmd, key=None, *args):
-        '''key will be used by redis cluster'''
+    async def send(self, cmd, *args):
 
         if not self.connected():
             await self.connect()

@@ -28,12 +28,14 @@ from rcc.binpack import to_constant_bin_number
 from rcc.cluster.info import getSlotsToNodesMapping, clusterCheck
 
 
-def makeClientfromNode(node):
+def makeClientfromNode(node, redisPassword):
     url = f'redis://{node.ip}:{node.port}'
-    return RedisClient(url, '')  # FIXME password
+    return RedisClient(url, redisPassword)
 
 
-async def migrateSlot(masterClients, slot, sourceNode, destinationNode, dry=False):
+async def migrateSlot(
+    masterClients, redisPassword, slot, sourceNode, destinationNode, dry=False
+):
     '''Migrate a slot to a node'''
     logging.info(
         f'migrate from {sourceNode.node_id} to {destinationNode.node_id} slot [{slot}]'
@@ -42,11 +44,16 @@ async def migrateSlot(masterClients, slot, sourceNode, destinationNode, dry=Fals
     if dry:
         src = f'redis://{sourceNode.ip}:{sourceNode.port}'
         dst = f'redis://{destinationNode.ip}:{destinationNode.port}'
-        print(f'rcc migrate --src-addr {src} --dst-addr {dst} {slot}')
+
+        passwordOption = ''
+        if redisPassword:
+            passwordOption = f'--password {redisPassword}'
+
+        print(f'rcc migrate --src-addr {src} --dst-addr {dst} {slot} {passwordOption}')
         return True
 
-    sourceClient = makeClientfromNode(sourceNode)
-    destinationClient = makeClientfromNode(destinationNode)
+    sourceClient = makeClientfromNode(sourceNode, redisPassword)
+    destinationClient = makeClientfromNode(destinationNode, redisPassword)
 
     # 1. Set the destination node slot to importing state using CLUSTER SETSLOT
     #    <slot> IMPORTING <source-node-id>.
@@ -107,7 +114,7 @@ async def migrateSlot(masterClients, slot, sourceNode, destinationNode, dry=Fals
     return True
 
 
-async def waitForClusterViewToBeConsistent(redis_urls, timeout):
+async def waitForClusterViewToBeConsistent(redisUrls, redisPassword, timeout):
     print('Waiting for cluster view to be consistent...')
     start = time.time()
 
@@ -117,7 +124,7 @@ async def waitForClusterViewToBeConsistent(redis_urls, timeout):
         sys.stderr.write('.')
         sys.stderr.flush()
 
-        ok = await clusterCheck(redis_urls)
+        ok = await clusterCheck(redisUrls, redisPassword)
         if ok:
             break
 
@@ -139,14 +146,14 @@ async def runClusterCheck(port):
 
 
 async def binPackingReshardCoroutine(
-    redis_urls, weights, timeout, dry=False, nodeId=None
+    redisUrls, redisPassword, weights, timeout, dry=False, nodeId=None
 ):
-    redisClient = RedisClient(redis_urls, '')
+    redisClient = RedisClient(redisUrls, redisPassword)
     nodes = await redisClient.cluster_nodes()
 
     # There will be as many bins as there are master nodes
     masterNodes = [node for node in nodes if node.role == 'master']
-    masterClients = [makeClientfromNode(node) for node in masterNodes]
+    masterClients = [makeClientfromNode(node, redisPassword) for node in masterNodes]
     binCount = len(masterNodes)
 
     # Multiple keys could hash to the same hash-slot (collisions), so
@@ -171,7 +178,7 @@ async def binPackingReshardCoroutine(
         allSlots.append(binSlots)
 
     # We need to know where each slots lives
-    slotToNodes = await getSlotsToNodesMapping(redis_urls)
+    slotToNodes = await getSlotsToNodesMapping(redisUrls, redisPassword)
 
     totalMigratedSlots = 0
 
@@ -190,12 +197,14 @@ async def binPackingReshardCoroutine(
         # Migrate each slot
         for slot in binSlots:
             # recompute the slots to node mapping after each node migration
-            slotToNodes = await getSlotsToNodesMapping(redis_urls)
+            slotToNodes = await getSlotsToNodesMapping(redisUrls, redisPassword)
 
             sourceNode = slotToNodes[slot]
             if sourceNode.node_id != node.node_id:
 
-                ret = await migrateSlot(masterClients, slot, sourceNode, node, dry)
+                ret = await migrateSlot(
+                    masterClients, redisPassword, slot, sourceNode, node, dry
+                )
                 if not ret:
                     return False
 
@@ -216,7 +225,9 @@ async def binPackingReshardCoroutine(
         # note that existing redis cli command do not migrate to multiple nodes at once
         # while this script does
         #
-        consistent = await waitForClusterViewToBeConsistent(redis_urls, timeout)
+        consistent = await waitForClusterViewToBeConsistent(
+            redisUrls, redisPassword, timeout
+        )
         if not consistent:
             return False
 
@@ -224,7 +235,7 @@ async def binPackingReshardCoroutine(
     return True
 
 
-def binPackingReshard(redis_urls, path, timeout, dry=False, nodeId=None):
+def binPackingReshard(redisUrls, redisPassword, path, timeout, dry=False, nodeId=None):
     if not os.path.exists(path):
         logging.error(f'{path} does not exists')
         return False
@@ -248,5 +259,7 @@ def binPackingReshard(redis_urls, path, timeout, dry=False, nodeId=None):
             return False
 
     return asyncio.run(
-        binPackingReshardCoroutine(redis_urls, weights, timeout, dry, nodeId)
+        binPackingReshardCoroutine(
+            redisUrls, redisPassword, weights, timeout, dry, nodeId
+        )
     )

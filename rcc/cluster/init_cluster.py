@@ -15,7 +15,7 @@ from rcc.cluster.info import clusterCheck
 from rcc.client import RedisClient
 
 
-def makeServerConfig(root, startPort=11000, masterNodeCount=3):
+def makeServerConfig(root, startPort=11000, masterNodeCount=3, password=None):
 
     # create config files
     for i in range(masterNodeCount * 2):
@@ -26,7 +26,11 @@ def makeServerConfig(root, startPort=11000, masterNodeCount=3):
             # cluster-config-file nodes-1.conf
             # dbfilename dump1.rdb
             f.write(f'cluster-config-file nodes-{i}.conf' + '\n')
-            f.write(f'dbfilename dump{i}.rdb')
+            f.write(f'dbfilename dump{i}.rdb' + '\n')
+
+            if password:
+                f.write(f'requirepass {password}' + '\n')
+                f.write(f'masterauth {password}' + '\n')
 
     # Create a Procfile
     # server1: redis-server server1.conf --protected-mode no ...
@@ -44,7 +48,13 @@ def makeServerConfig(root, startPort=11000, masterNodeCount=3):
     )
     host = 'localhost'
     port = startPort
-    clusterInitCmd = f'echo yes | redis-cli -h {host} -p {port} '
+
+    # We could use the -a option too
+    env = ''
+    if password:
+        env += f'env REDISCLI_AUTH={password} '
+
+    clusterInitCmd = f'echo yes | {env}redis-cli -h {host} -p {port} '
     clusterInitCmd += f'--cluster create {ips} --cluster-replicas 1'
 
     return clusterInitCmd
@@ -122,13 +132,13 @@ async def waitForAllConnectionsToBeReady(urls, password, timeout: int):
         sys.stderr.write('\n')
 
 
-async def runNewCluster(root, startPort, size):
+async def runNewCluster(root, startPort, size, password):
     size = int(size)
 
     portRange = [port for port in range(startPort, startPort + 2 * size)]
     click.secho(f'1/6 Creating server config for range {portRange}', bold=True)
 
-    initCmd = makeServerConfig(root, startPort, size)
+    initCmd = makeServerConfig(root, startPort, size, password)
 
     click.secho('2/6 Check that ports are opened', bold=True)
     await checkOpenedPort(portRange, timeout=10)
@@ -142,7 +152,7 @@ async def runNewCluster(root, startPort, size):
         urls = [
             f'redis://localhost:{port}' for port in range(startPort, startPort + size)
         ]
-        await waitForAllConnectionsToBeReady(urls, password='', timeout=5)
+        await waitForAllConnectionsToBeReady(urls, password, timeout=5)
 
         # Initialize the cluster (master/slave assignments, etc...)
         click.secho(f'5/6 Initialize the cluster', bold=True)
@@ -155,7 +165,7 @@ async def runNewCluster(root, startPort, size):
         while True:
             ret = False
             try:
-                ret = await clusterCheck(redisUrl)
+                ret = await clusterCheck(redisUrl, password)
             except Exception:
                 pass
 

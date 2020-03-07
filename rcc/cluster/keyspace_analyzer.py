@@ -43,14 +43,18 @@ class KeySpace(object):
 
 
 async def analyzeKeyspace(
-    redisUrlsStr: str, timeout: int, progress: bool = True, count: int = -1
+    redisUrlsStr: str,
+    redisPassword: str,
+    timeout: int,
+    progress: bool = True,
+    count: int = -1,
 ):
     pattern = '__key*__:*'
 
     redisUrls = redisUrlsStr.split(';')
     redisUrl = redisUrls[0]
 
-    redisClient = RedisClient(redisUrl, '')
+    redisClient = RedisClient(redisUrl, redisPassword)
     await redisClient.connect()
 
     clients = []
@@ -58,10 +62,10 @@ async def analyzeKeyspace(
         nodes = await redisClient.cluster_nodes()
         masterNodes = [node for node in nodes if node.role == 'master']
         for node in masterNodes:
-            client = makeClientfromNode(node)
+            client = makeClientfromNode(node, redisPassword)
             clients.append(client)
     else:
-        clients = [RedisClient(url, '') for url in redisUrls]
+        clients = [RedisClient(url, redisPassword) for url in redisUrls]
 
     #
     # E for Keyevent events, published with __keyevent@<db>__ prefix.
