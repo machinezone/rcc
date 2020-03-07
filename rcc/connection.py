@@ -57,8 +57,11 @@ class Connection(object):
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
         if self.password:
-            # FIXME: need AUTH error checking
+            assert not self.multiplexing  # not sure how this is going to work
             await self.send('AUTH', self.password)
+            response = await self.readResponse()
+            if response != b'OK':
+                raise ValueError(f'Error Authenticating {response}')
 
         if self.multiplexing:
             self.pubSubEvent = asyncio.Event()

@@ -92,9 +92,16 @@ async def migrateSlot(
         db = 0
         timeout = 5000  # 5 seconds timeout
         try:
-            await sourceClient.send(
-                'MIGRATE', host, port, "", db, timeout, "KEYS", *keys
-            )
+            args = ['MIGRATE', host, port, "", db, timeout]
+
+            if redisPassword:
+                args.append('AUTH')
+                args.append(redisPassword)
+
+            args.append("KEYS")
+            args.append(*keys)
+
+            await sourceClient.send(*args)
         except Exception as e:
             logging.error(f'error with MIGRATE command: {e}')
             return False

@@ -21,7 +21,7 @@ async def coro():
     clusterReadyFile = os.path.join(root, 'redis_cluster_ready')
     startPort = 12000
     redisUrl = f'redis://localhost:{startPort}'
-    redisPassword = ''
+    redisPassword = 'foobar'
     size = 3
     task = asyncio.create_task(runNewCluster(root, startPort, size, redisPassword))
 
@@ -29,7 +29,7 @@ async def coro():
     while not os.path.exists(clusterReadyFile):
         await asyncio.sleep(0.1)
 
-    client = makeClient(startPort)
+    client = makeClient(startPort, redisPassword)
 
     i = 2
     channel = 'channel_2'

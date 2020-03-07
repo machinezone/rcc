@@ -49,7 +49,7 @@ async def coro():
     while not os.path.exists(clusterReadyFile):
         await asyncio.sleep(0.1)
 
-    client = makeClient(startPort)
+    client = makeClient(startPort, redisPassword)
     await checkStrings(client)
 
     # now analyze keyspace for 3 seconds
