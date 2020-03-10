@@ -180,45 +180,186 @@ hash slot for a given channel name. Notice that the CRC16 assigns unique
 hash values for all our sample keys. We can also see that the distribution of published
 items by channel name is uneven. If we were to randomly pick a channel and have
 it processed by a random Redis node, <em>that would lead to inefficiencies</em>.</p>
-<pre><code>Channel name                                Published items         Redis Hash Slot
-------------                                ---------------         ---------------
-niso_engine_crash_id                                     16                    1732
-niso_engine_fps_id                                    46889                    6454
-niso_engine_graphics_device_info                       4284                    4050
-niso_engine_lifecycle_id                              13444                     803
-niso_engine_memory_used_id                            46745                     754
-niso_engine_memory_warning_id                         14714                    3791
-niso_engine_message_loop_id                            4251                    4152
-niso_engine_net_request_error_id                       4356                   14143
-niso_engine_net_request_id                           677400                    6417
-niso_engine_net_traffic_id                             4322                    7208
-niso_engine_payload_id                               163277                   11316
-niso_engine_performance_metrics_id                     5585                    7132
-niso_engine_rml_load_document_metrics_id             360998                    2476
-niso_engine_rml_navigation_id                        485541                   14863
-niso_engine_rocket_log_id                              3811                    9883
-niso_engine_selfupdate_storage_error_id                   2                    4959
-niso_engine_set_asset_build_id                         4339                    6884
-niso_engine_set_cdn_idx_id                             4392                   15400
-niso_game_chat_events_id                               9307                    6629
-niso_game_logging_id                                    685                    3247
-niso_game_lua_health_id                              176710                   15535
-niso_game_lua_health_mem_warning                        264                   16311
-niso_game_lua_health_minutes                          43157                     687
-niso_game_lua_health_threshold                         2410                    6831
-niso_game_noisytypes_id                              103027                   15422
-niso_game_pubsub_events_id                             8701                    2221
-niso_game_unexpected_termination_id                     518                    7627
-niso_game_user_actions_id                                46                    7092
-niso_sms_set_rate_control_id                              7                    3113
-</code></pre>
-
+<table>
+<thead>
+<tr>
+<th>Mean</th>
+<th>Median</th>
+<th>Stddev</th>
+<th>Stddev/Mean</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>500326.6</td>
+<td>387397.0</td>
+<td>265549</td>
+<td>0.530</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Channel name</th>
+<th>Published items</th>
+<th>Redis Hash Slot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>channel_1</td>
+<td>16</td>
+<td>1732</td>
+</tr>
+<tr>
+<td>channel_2</td>
+<td>46889</td>
+<td>6454</td>
+</tr>
+<tr>
+<td>channel_3</td>
+<td>4284</td>
+<td>4050</td>
+</tr>
+<tr>
+<td>channel_4</td>
+<td>13444</td>
+<td>803</td>
+</tr>
+<tr>
+<td>channel_5</td>
+<td>46745</td>
+<td>754</td>
+</tr>
+<tr>
+<td>channel_6</td>
+<td>14714</td>
+<td>3791</td>
+</tr>
+<tr>
+<td>channel_7</td>
+<td>4251</td>
+<td>4152</td>
+</tr>
+<tr>
+<td>channel_8</td>
+<td>4356</td>
+<td>14143</td>
+</tr>
+<tr>
+<td>channel_9</td>
+<td>677400</td>
+<td>6417</td>
+</tr>
+<tr>
+<td>channel_10</td>
+<td>4322</td>
+<td>7208</td>
+</tr>
+<tr>
+<td>channel_11</td>
+<td>163277</td>
+<td>11316</td>
+</tr>
+<tr>
+<td>channel_12</td>
+<td>5585</td>
+<td>7132</td>
+</tr>
+<tr>
+<td>channel_13</td>
+<td>360998</td>
+<td>2476</td>
+</tr>
+<tr>
+<td>channel_14</td>
+<td>485541</td>
+<td>14863</td>
+</tr>
+<tr>
+<td>channel_15</td>
+<td>3811</td>
+<td>9883</td>
+</tr>
+<tr>
+<td>channel_16</td>
+<td>2</td>
+<td>4959</td>
+</tr>
+<tr>
+<td>channel_17</td>
+<td>4339</td>
+<td>6884</td>
+</tr>
+<tr>
+<td>channel_18</td>
+<td>4392</td>
+<td>15400</td>
+</tr>
+<tr>
+<td>channel_19</td>
+<td>9307</td>
+<td>6629</td>
+</tr>
+<tr>
+<td>channel_20</td>
+<td>685</td>
+<td>3247</td>
+</tr>
+<tr>
+<td>channel_21</td>
+<td>176710</td>
+<td>15535</td>
+</tr>
+<tr>
+<td>channel_22</td>
+<td>264</td>
+<td>16311</td>
+</tr>
+<tr>
+<td>channel_23</td>
+<td>43157</td>
+<td>687</td>
+</tr>
+<tr>
+<td>channel_24</td>
+<td>2410</td>
+<td>6831</td>
+</tr>
+<tr>
+<td>channel_25</td>
+<td>103027</td>
+<td>15422</td>
+</tr>
+<tr>
+<td>channel_26</td>
+<td>8701</td>
+<td>2221</td>
+</tr>
+<tr>
+<td>channel_27</td>
+<td>518</td>
+<td>7627</td>
+</tr>
+<tr>
+<td>channel_28</td>
+<td>46</td>
+<td>7092</td>
+</tr>
+<tr>
+<td>channel_29</td>
+<td>7</td>
+<td>3113</td>
+</tr>
+</tbody>
+</table>
 <p>Let's try to do the channel to hash slot assignment randomly, as it would be done if we were not assigning hash slots to Redis nodes manually.</p>
 <h3 id="random-distribution-1">Random distribution 1</h3>
-<pre><code>537399 {'niso_engine_rml_navigation_id': 485541, 'niso_game_lua_health_minutes': 43157, 'niso_game_pubsub_events_id': 8701}
-667035 {'niso_engine_crash_id': 16, 'niso_engine_graphics_device_info': 4284, 'niso_engine_memory_warning_id': 14714, 'niso_engine_net_request_error_id': 4356, 'niso_engine_rml_load_document_metrics_id': 360998, 'niso_engine_selfupdate_storage_error_id': 2, 'niso_game_lua_health_id': 176710, 'niso_game_lua_health_threshold': 2410, 'niso_game_noisytypes_id': 103027, 'niso_game_unexpected_termination_id': 518}
-59884 {'niso_engine_memory_used_id': 46745, 'niso_engine_message_loop_id': 4251, 'niso_engine_rocket_log_id': 3811, 'niso_engine_set_asset_build_id': 4339, 'niso_game_logging_id': 685, 'niso_game_user_actions_id': 46, 'niso_sms_set_rate_control_id': 7}
-924880 {'niso_engine_fps_id': 46889, 'niso_engine_lifecycle_id': 13444, 'niso_engine_net_request_id': 677400, 'niso_engine_net_traffic_id': 4322, 'niso_engine_payload_id': 163277, 'niso_engine_performance_metrics_id': 5585, 'niso_engine_set_cdn_idx_id': 4392, 'niso_game_chat_events_id': 9307, 'niso_game_lua_health_mem_warning': 264}
+<pre><code>537399 {'channel_14': 485541, 'channel_23': 43157, 'channel_26': 8701}
+667035 {'channel_1': 16, 'channel_3': 4284, 'channel_6': 14714, 'channel_8': 4356, 'channel_13': 360998, 'channel_16': 2, 'channel_21': 176710, 'channel_24': 2410, 'channel_25': 103027, 'channel_27': 518}
+59884 {'channel_5': 46745, 'channel_7': 4251, 'channel_15': 3811, 'channel_17': 4339, 'channel_20': 685, 'channel_28': 46, 'channel_29': 7}
+924880 {'channel_2': 46889, 'channel_4': 13444, 'channel_9': 677400, 'channel_10': 4322, 'channel_11': 163277, 'channel_12': 5585, 'channel_18': 4392, 'channel_19': 9307, 'channel_22': 264}
 stdev 376758.0808394682
 </code></pre>
 
@@ -237,10 +378,10 @@ plt.show()
 <p><img alt="picture" src="../random_1_pie_chart.png" /></p>
 <p>This isn't a great distribution. Node 3 got very few hash slots assigned, while Node 4 seems to do too much work.</p>
 <h3 id="random-distribution-2">Random distribution 2</h3>
-<pre><code>821388 {'niso_engine_message_loop_id': 4251, 'niso_engine_payload_id': 163277, 'niso_engine_performance_metrics_id': 5585, 'niso_engine_rml_load_document_metrics_id': 360998, 'niso_engine_set_cdn_idx_id': 4392, 'niso_game_logging_id': 685, 'niso_game_lua_health_id': 176710, 'niso_game_lua_health_threshold': 2410, 'niso_game_noisytypes_id': 103027, 'niso_game_user_actions_id': 46, 'niso_sms_set_rate_control_id': 7}
-75311 {'niso_engine_memory_warning_id': 14714, 'niso_engine_net_traffic_id': 4322, 'niso_engine_rocket_log_id': 3811, 'niso_game_chat_events_id': 9307, 'niso_game_lua_health_minutes': 43157}
-1274894 {'niso_engine_crash_id': 16, 'niso_engine_fps_id': 46889, 'niso_engine_lifecycle_id': 13444, 'niso_engine_memory_used_id': 46745, 'niso_engine_net_request_id': 677400, 'niso_engine_rml_navigation_id': 485541, 'niso_engine_selfupdate_storage_error_id': 2, 'niso_engine_set_asset_build_id': 4339, 'niso_game_unexpected_termination_id': 518}
-17605 {'niso_engine_graphics_device_info': 4284, 'niso_engine_net_request_error_id': 4356, 'niso_game_lua_health_mem_warning': 264, 'niso_game_pubsub_events_id': 8701}
+<pre><code>821388 {'channel_7': 4251, 'channel_11': 163277, 'channel_12': 5585, 'channel_13': 360998, 'channel_18': 4392, 'channel_20': 685, 'channel_21': 176710, 'channel_24': 2410, 'channel_25': 103027, 'channel_28': 46, 'channel_29': 7}
+75311 {'channel_6': 14714, 'channel_10': 4322, 'channel_15': 3811, 'channel_19': 9307, 'channel_23': 43157}
+1274894 {'channel_1': 16, 'channel_2': 46889, 'channel_4': 13444, 'channel_5': 46745, 'channel_9': 677400, 'channel_14': 485541, 'channel_16': 2, 'channel_17': 4339, 'channel_27': 518}
+17605 {'channel_3': 4284, 'channel_8': 4356, 'channel_22': 264, 'channel_26': 8701}
 stdev 493807.17986663507
 </code></pre>
 
@@ -292,10 +433,10 @@ Cluster Manager Commands:
 
 <p>Back to the bin-packing algorithm, let's see how it performs on our own real data set, which is a less contrived than the one we used in our first example.</p>
 <h3 id="bin-packing-distribution">Bin packing distribution</h3>
-<pre><code>677400 {'niso_engine_net_request_id': 677400}
-503781 {'niso_engine_rml_navigation_id': 485541, 'niso_game_pubsub_events_id': 8701, 'niso_engine_set_asset_build_id': 4339, 'niso_engine_message_loop_id': 4251, 'niso_game_logging_id': 685, 'niso_game_lua_health_mem_warning': 264}
-503736 {'niso_engine_rml_load_document_metrics_id': 360998, 'niso_engine_fps_id': 46889, 'niso_engine_memory_used_id': 46745, 'niso_engine_memory_warning_id': 14714, 'niso_engine_lifecycle_id': 13444, 'niso_game_chat_events_id': 9307, 'niso_engine_net_request_error_id': 4356, 'niso_engine_graphics_device_info': 4284, 'niso_game_lua_health_threshold': 2410, 'niso_game_unexpected_termination_id': 518, 'niso_game_user_actions_id': 46, 'niso_engine_crash_id': 16, 'niso_sms_set_rate_control_id': 7, 'niso_engine_selfupdate_storage_error_id': 2}
-504281 {'niso_game_lua_health_id': 176710, 'niso_engine_payload_id': 163277, 'niso_game_noisytypes_id': 103027, 'niso_game_lua_health_minutes': 43157, 'niso_engine_performance_metrics_id': 5585, 'niso_engine_set_cdn_idx_id': 4392, 'niso_engine_net_traffic_id': 4322, 'niso_engine_rocket_log_id': 3811}
+<pre><code>677400 {'channel_9': 677400}
+503781 {'channel_14': 485541, 'channel_26': 8701, 'channel_17': 4339, 'channel_7': 4251, 'channel_20': 685, 'channel_22': 264}
+503736 {'channel_13': 360998, 'channel_2': 46889, 'channel_5': 46745, 'channel_6': 14714, 'channel_4': 13444, 'channel_19': 9307, 'channel_8': 4356, 'channel_3': 4284, 'channel_24': 2410, 'channel_27': 518, 'channel_28': 46, 'channel_1': 16, 'channel_29': 7, 'channel_16': 2}
+504281 {'channel_21': 176710, 'channel_11': 163277, 'channel_25': 103027, 'channel_23': 43157, 'channel_12': 5585, 'channel_18': 4392, 'channel_10': 4322, 'channel_15': 3811}
 </code></pre>
 
 <p>Our 4 bins receive around 500,000 units of weight each. If we visualize this with a pie chart, this feels like a pretty fair repartition.</p>
