@@ -90,7 +90,7 @@
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-level="2"><a href="#bigger-cluster" class="nav-link">Bigger cluster</a>
+            <li class="nav-item" data-level="2"><a href="#larger-cobra-cluster" class="nav-link">Larger Cobra cluster</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -104,7 +104,7 @@
 <h1 id="resharding">Resharding</h1>
 <p><img alt="picture" src="../pie.jpg" /></p>
 <h2 id="using-rcc-to-reshard-a-redis-cluster-using-keyspace-notification">Using rcc to reshard a redis cluster using keyspace notification</h2>
-<p><a href="https://github.com/machinezone/rcc/">rcc</a> comes with 2 important tools, one for analyzing the keys access accross nodes, built on top of <a href="https://redis.io/topics/notifications">redis keyspace notifications</a> (which in turns runs on top of redis PubSub). The instrumentation is done over a period of time to sample the key access patterns. A 'weights' file is created as part of this tool. That file is saved in the current working directory by default. It is a very simple csv file that show how often a key is accessed. Currently rcc only support tracking <em>XADD</em> redis commands.</p>
+<p><a href="https://github.com/machinezone/rcc/">rcc</a> comes with 2 important tools, one for analyzing the keys access accross nodes, built on top of <a href="https://redis.io/topics/notifications">redis keyspace notifications</a> (which in turns runs on top of redis PubSub). The instrumentation is done over a period of time to sample the key access patterns. A 'weights' file is created as part of this tool. That file is saved in the current working directory by default. It is a very simple csv file that show how often a key is accessed.</p>
 <pre><code>$ head weights.csv
 _pubsub::foo,50
 _pubsub::bar,53
@@ -127,7 +127,7 @@ _pubsub::foo,5035
 </ul>
 <p>The redis cluster is started with: <code>rcc make-cluster</code> ; rcc has a convenience sub-command to generate config file for cluster (by default 3 masters and 3 replicas), and finally initialize the cluster.</p>
 <h3 id="keyspace-access-analysis-before-resharding">Keyspace access analysis before resharding</h3>
-<pre><code>rcc analyze-keyspace --redis_url redis://localhost:11000 --timeout 10
+<pre><code>rcc keyspace --redis_url redis://localhost:11000 --timeout 10
 ...
 == Nodes ==
 # each ∎ represents a count of 105. total 15515
@@ -175,7 +175,7 @@ Waiting for cluster view to be consistent...
 
 <p>It roughtly looks like we took slots away from the first node, and gave them to the other two redis instances.</p>
 <h3 id="keyspace-access-analysis-after-resharding">Keyspace access analysis after resharding</h3>
-<pre><code>rcc analyze-keyspace --redis_url redis://localhost:11000 --timeout 10
+<pre><code>rcc keyspace --redis_url redis://localhost:11000 --timeout 10
 ...
 == Nodes ==
 # each ∎ represents a count of 79. total 15114
@@ -184,39 +184,109 @@ Waiting for cluster view to be consistent...
 127.0.0.1:11001 [  4987] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
 </code></pre>
 
-<h2 id="bigger-cluster">Bigger cluster</h2>
-<p>Here is how things look like on a bigger cluster, with 10 masters and 10 replicas.</p>
-<h3 id="after-resharding">After resharding</h3>
-<p>The node with the highest score (73055) receives more than double the amount of
-XADDs than the node with the lowest received commands (27295).</p>
-<pre><code># each ∎ represents a count of 1198. total 469148
-172.27.186.112:6379 [ 73055] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-  172.26.9.248:6379 [ 67319] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
- 172.25.76.196:6379 [ 56250] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-172.27.126.240:6379 [ 55064] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
- 172.26.42.134:6379 [ 44777] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
- 172.25.225.48:6379 [ 42469] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-172.24.239.211:6379 [ 38401] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-172.25.212.185:6379 [ 33084] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
- 172.24.142.39:6379 [ 31434] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-172.25.150.103:6379 [ 27295] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+<h2 id="larger-cobra-cluster">Larger Cobra cluster</h2>
+<ul>
+<li>The cluster has 10 masters and 10 replicas.</li>
+<li>We sample about 5,000,000 received commands (this takes around a minute). This use the new --count option of the <em>keyspace</em> command.</li>
+</ul>
+<h3 id="using-application-level-sharding">Using application level sharding</h3>
+<p>Cobra uses consistent hashing to compute a shard/node id. The distribution of load is not very good on production data.</p>
+<pre><code># each ∎ represents a count of 15417. total 5003266
+ 172.25.241.24:6379 [940378] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+172.24.239.218:6379 [879581] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+ 172.24.244.78:6379 [690303] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+ 172.24.86.253:6379 [627516] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  172.24.56.49:6379 [431098] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+172.28.138.193:6379 [343696] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+ 172.29.62.140:6379 [340555] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+172.26.145.223:6379 [277856] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+172.25.184.203:6379 [258128] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+172.31.104.188:6379 [214155] ∎∎∎∎∎∎∎∎∎∎∎∎∎
 </code></pre>
 
-<h3 id="after-resharding_1">After resharding</h3>
-<p>We only monitored for a couple of seconds, so did not capture as many events,
-but we can see that the distribution is much better.</p>
-<pre><code># each ∎ represents a count of 62. total 33584
-172.25.212.185:6379 [  3741] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-  172.26.9.248:6379 [  3634] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
- 172.25.225.48:6379 [  3596] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
- 172.24.142.39:6379 [  3474] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
- 172.26.42.134:6379 [  3386] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-172.27.126.240:6379 [  3312] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-172.24.239.211:6379 [  3306] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-172.25.150.103:6379 [  3302] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
- 172.25.76.196:6379 [  3001] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-172.27.186.112:6379 [  2832] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Mean</th>
+<th>Median</th>
+<th>Stddev</th>
+<th>Stddev/Mean</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>500326.6</td>
+<td>387397.0</td>
+<td>265549</td>
+<td>0.530</td>
+</tr>
+</tbody>
+</table>
+<p>The standard deviation is very high. Some nodes do way more work than others.</p>
+<h3 id="using-redis-cluster-before-resharding">Using redis-cluster, before resharding</h3>
+<pre><code># each ∎ represents a count of 13921. total 5000873
+  172.26.42.94:6379 [849140] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  172.27.86.24:6379 [796878] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+ 172.27.36.226:6379 [759250] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  172.26.25.36:6379 [718014] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  172.24.34.11:6379 [409835] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+172.24.244.119:6379 [391286] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+172.25.145.138:6379 [386700] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+ 172.26.32.220:6379 [348391] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+ 172.25.225.42:6379 [341379] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>Mean</th>
+<th>Median</th>
+<th>Stddev</th>
+<th>Stddev/Mean</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>555652</td>
+<td>409835</td>
+<td>217322</td>
+<td>0.391</td>
+</tr>
+</tbody>
+</table>
+<p>The standard deviation decreased from 265500 to 217322, the ratio between the standard deviation and the mean is smaller.</p>
+<h3 id="after-the-binpacking-resharding">After the binpacking resharding</h3>
+<pre><code># each ∎ represents a count of 10615. total 5004030
+ 172.27.36.226:6379 [647515] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  172.26.25.36:6379 [581910] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+172.24.244.119:6379 [566576] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  172.27.86.24:6379 [562850] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  172.24.34.11:6379 [560954] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+ 172.25.225.42:6379 [551802] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  172.26.42.94:6379 [536849] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+172.25.145.138:6379 [499993] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+ 172.26.32.220:6379 [495581] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>Mean</th>
+<th>Median</th>
+<th>Stddev</th>
+<th>Stddev/Mean</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>556003</td>
+<td>560954</td>
+<td>45278</td>
+<td>0.081</td>
+</tr>
+</tbody>
+</table>
+<p>Visually we can see that the distribution is very well balanced. The Stddev/Mean ratio decreased by a factor of 6.5 (0.530 / 0.81).</p></div>
             </div>
         </div>
 
