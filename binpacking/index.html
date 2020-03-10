@@ -180,180 +180,39 @@ hash slot for a given channel name. Notice that the CRC16 assigns unique
 hash values for all our sample keys. We can also see that the distribution of published
 items by channel name is uneven. If we were to randomly pick a channel and have
 it processed by a random Redis node, <em>that would lead to inefficiencies</em>.</p>
-<table>
-<thead>
-<tr>
-<th>Mean</th>
-<th>Median</th>
-<th>Stddev</th>
-<th>Stddev/Mean</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>500326.6</td>
-<td>387397.0</td>
-<td>265549</td>
-<td>0.530</td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th>Channel name</th>
-<th>Published items</th>
-<th>Redis Hash Slot</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>channel_1</td>
-<td>16</td>
-<td>1732</td>
-</tr>
-<tr>
-<td>channel_2</td>
-<td>46889</td>
-<td>6454</td>
-</tr>
-<tr>
-<td>channel_3</td>
-<td>4284</td>
-<td>4050</td>
-</tr>
-<tr>
-<td>channel_4</td>
-<td>13444</td>
-<td>803</td>
-</tr>
-<tr>
-<td>channel_5</td>
-<td>46745</td>
-<td>754</td>
-</tr>
-<tr>
-<td>channel_6</td>
-<td>14714</td>
-<td>3791</td>
-</tr>
-<tr>
-<td>channel_7</td>
-<td>4251</td>
-<td>4152</td>
-</tr>
-<tr>
-<td>channel_8</td>
-<td>4356</td>
-<td>14143</td>
-</tr>
-<tr>
-<td>channel_9</td>
-<td>677400</td>
-<td>6417</td>
-</tr>
-<tr>
-<td>channel_10</td>
-<td>4322</td>
-<td>7208</td>
-</tr>
-<tr>
-<td>channel_11</td>
-<td>163277</td>
-<td>11316</td>
-</tr>
-<tr>
-<td>channel_12</td>
-<td>5585</td>
-<td>7132</td>
-</tr>
-<tr>
-<td>channel_13</td>
-<td>360998</td>
-<td>2476</td>
-</tr>
-<tr>
-<td>channel_14</td>
-<td>485541</td>
-<td>14863</td>
-</tr>
-<tr>
-<td>channel_15</td>
-<td>3811</td>
-<td>9883</td>
-</tr>
-<tr>
-<td>channel_16</td>
-<td>2</td>
-<td>4959</td>
-</tr>
-<tr>
-<td>channel_17</td>
-<td>4339</td>
-<td>6884</td>
-</tr>
-<tr>
-<td>channel_18</td>
-<td>4392</td>
-<td>15400</td>
-</tr>
-<tr>
-<td>channel_19</td>
-<td>9307</td>
-<td>6629</td>
-</tr>
-<tr>
-<td>channel_20</td>
-<td>685</td>
-<td>3247</td>
-</tr>
-<tr>
-<td>channel_21</td>
-<td>176710</td>
-<td>15535</td>
-</tr>
-<tr>
-<td>channel_22</td>
-<td>264</td>
-<td>16311</td>
-</tr>
-<tr>
-<td>channel_23</td>
-<td>43157</td>
-<td>687</td>
-</tr>
-<tr>
-<td>channel_24</td>
-<td>2410</td>
-<td>6831</td>
-</tr>
-<tr>
-<td>channel_25</td>
-<td>103027</td>
-<td>15422</td>
-</tr>
-<tr>
-<td>channel_26</td>
-<td>8701</td>
-<td>2221</td>
-</tr>
-<tr>
-<td>channel_27</td>
-<td>518</td>
-<td>7627</td>
-</tr>
-<tr>
-<td>channel_28</td>
-<td>46</td>
-<td>7092</td>
-</tr>
-<tr>
-<td>channel_29</td>
-<td>7</td>
-<td>3113</td>
-</tr>
-</tbody>
-</table>
+<pre><code>Channel name   Published items   Redis Hash Slot
+------------   ---------------   ---------------
+channel_1      16               1732
+channel_2      46889            6454
+channel_3      4284             4050
+channel_4      13444            803
+channel_5      46745            754
+channel_6      14714            3791
+channel_7      4251             4152
+channel_8      4356             14143
+channel_9      677400           6417
+channel_10     4322             7208
+channel_11     163277           11316
+channel_12     5585             7132
+channel_13     360998           2476
+channel_14     485541           14863
+channel_15     3811             9883
+channel_16     2                4959
+channel_17     4339             6884
+channel_18     4392             15400
+channel_19     9307             6629
+channel_20     685              3247
+channel_21     176710           15535
+channel_22     264              16311
+channel_23     43157            687
+channel_24     2410             6831
+channel_25     103027           15422
+channel_26     8701             2221
+channel_27     518              7627
+channel_28     46               7092
+channel_29     7                3113
+</code></pre>
+
 <p>Let's try to do the channel to hash slot assignment randomly, as it would be done if we were not assigning hash slots to Redis nodes manually.</p>
 <h3 id="random-distribution-1">Random distribution 1</h3>
 <pre><code>537399 {'channel_14': 485541, 'channel_23': 43157, 'channel_26': 8701}
