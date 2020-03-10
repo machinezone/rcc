@@ -91,41 +91,39 @@ hash values for all our sample keys. We can also see that the distribution of pu
 items by channel name is uneven. If we were to randomly pick a channel and have
 it processed by a random Redis node, *that would lead to inefficiencies*.
 
-Mean     | Median   | Stddev  | Stddev/Mean
--------- | -------- | ------- | -------------
-500326.6 | 387397.0 | 265549  | 0.530
-
-Channel name | Published items | Redis Hash Slot
------------- | --------------- | ---------------
-channel_1    |  16             |   1732
-channel_2    |  46889          |   6454
-channel_3    |  4284           |   4050
-channel_4    |  13444          |   803
-channel_5    |  46745          |   754
-channel_6    |  14714          |   3791
-channel_7    |  4251           |   4152
-channel_8    |  4356           |   14143
-channel_9    |  677400         |   6417
-channel_10   |  4322           |   7208
-channel_11   |  163277         |   11316
-channel_12   |  5585           |   7132
-channel_13   |  360998         |   2476
-channel_14   |  485541         |   14863
-channel_15   |  3811           |   9883
-channel_16   |  2              |   4959
-channel_17   |  4339           |   6884
-channel_18   |  4392           |   15400
-channel_19   |  9307           |   6629
-channel_20   |  685            |   3247
-channel_21   |  176710         |   15535
-channel_22   |  264            |   16311
-channel_23   |  43157          |   687
-channel_24   |  2410           |   6831
-channel_25   |  103027         |   15422
-channel_26   |  8701           |   2221
-channel_27   |  518            |   7627
-channel_28   |  46             |   7092
-channel_29   |  7              |   3113
+```
+Channel name   Published items   Redis Hash Slot
+------------   ---------------   ---------------
+channel_1      16               1732
+channel_2      46889            6454
+channel_3      4284             4050
+channel_4      13444            803
+channel_5      46745            754
+channel_6      14714            3791
+channel_7      4251             4152
+channel_8      4356             14143
+channel_9      677400           6417
+channel_10     4322             7208
+channel_11     163277           11316
+channel_12     5585             7132
+channel_13     360998           2476
+channel_14     485541           14863
+channel_15     3811             9883
+channel_16     2                4959
+channel_17     4339             6884
+channel_18     4392             15400
+channel_19     9307             6629
+channel_20     685              3247
+channel_21     176710           15535
+channel_22     264              16311
+channel_23     43157            687
+channel_24     2410             6831
+channel_25     103027           15422
+channel_26     8701             2221
+channel_27     518              7627
+channel_28     46               7092
+channel_29     7                3113
+```
 
 Let's try to do the channel to hash slot assignment randomly, as it would be done if we were not assigning hash slots to Redis nodes manually.
 
