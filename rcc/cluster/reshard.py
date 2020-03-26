@@ -99,7 +99,8 @@ async def migrateSlot(
                 args.append(redisPassword)
 
             args.append("KEYS")
-            args.append(*keys)
+            for key in keys:
+                args.append(key)
 
             await sourceClient.send(*args)
         except Exception as e:
