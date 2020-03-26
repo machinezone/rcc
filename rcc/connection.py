@@ -12,9 +12,8 @@ import collections
 import socket
 from urllib.parse import urlparse
 
-import hiredis
-
 from rcc.response import convertResponse
+from rcc.parser import Reader
 
 
 class Connection(object):
@@ -30,7 +29,7 @@ class Connection(object):
 
         self.password = password
 
-        self._reader = hiredis.Reader()
+        self._reader = Reader()
 
         self.reader = None
         self.writer = None

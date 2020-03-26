@@ -9,14 +9,13 @@ TODO:
 import asyncio
 import logging
 
-import hiredis
-
 from rcc.hash_slot import getHashSlot
 from rcc.pool import ConnectionPool
 
 from rcc.commands.cluster import ClusterCommandsMixin
 from rcc.commands.pubsub import PubSubCommandsMixin
 from rcc.response import convertResponse
+from rcc.errors import ReplyError
 
 
 class RedisClient(ClusterCommandsMixin, PubSubCommandsMixin):
@@ -153,7 +152,7 @@ class RedisClient(ClusterCommandsMixin, PubSubCommandsMixin):
     # FIXME locks / static method / ASKING
     def needsRedirect(self, response):
         responseType = type(response)
-        if responseType != hiredis.ReplyError:
+        if responseType != ReplyError:
             return False
 
         responseStr = str(response)
@@ -199,7 +198,7 @@ class RedisClient(ClusterCommandsMixin, PubSubCommandsMixin):
                 response = await self.readResponse(connection)
 
                 responseType = type(response)
-                if responseType != hiredis.ReplyError:
+                if responseType != ReplyError:
                     return convertResponse(response, cmd)
 
                 attempts -= 1
