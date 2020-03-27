@@ -1,10 +1,10 @@
-from .errors import ReplyError
+import hiredis
 
 
 def convertResponse(response, cmd):
     # We need special handling for redis reply errors
     responseType = type(response)
-    if responseType == ReplyError:
+    if responseType == hiredis.ReplyError:
         return response
 
     if cmd == 'INFO':

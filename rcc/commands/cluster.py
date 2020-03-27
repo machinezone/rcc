@@ -4,8 +4,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import collections
-
-from rcc.errors import ReplyError
+import hiredis
 
 
 ClusterNode = collections.namedtuple(
@@ -29,7 +28,7 @@ class ClusterCommandsMixin:
 
         # ERR This instance has cluster support disabled'
         responseType = type(response)
-        if responseType == ReplyError:
+        if responseType == hiredis.ReplyError:
             return []
 
         response = response.decode()
