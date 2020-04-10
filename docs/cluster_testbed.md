@@ -1,4 +1,4 @@
-# Cluster testbed
+# Cluster test bed
 
 ## Problem
 
@@ -20,23 +20,26 @@ Options:
   --help                Show this message and exit.
 ```
 
-`rcc make-cluster` will create a temp folder, a set of redis-server config files and initialize the cluster using the `redis-cli --cluster init` command. Then it will run all the servers thank for [https://github.com/nickstenning/honcho](honcho), which is a simple python daemon tool based on [Foreman](https://github.com/ddollar/foreman). Foreman is a Ruby tool that reads a dead simple text file called a Procfile, container a list of label:commands separated by new lines.
+`rcc make-cluster` will create a temp folder, a set of redis-server config files and initialize the cluster using the `redis-cli --cluster init` command. Then it will run all the servers thank to [honcho]([https://github.com/nickstenning/honcho), which is a simple python init.d like tool based on [Foreman](https://github.com/ddollar/foreman). Foreman is the original Ruby init.d like tool that reads a very simple text file called a Procfile, containing a list of label:commands separated by new lines.
 
 ```
-$ cat /var/folders/qz/cb1zd5756hnd2tykv7z5sn_j8408d8/T/tmp03u8opux/Procfile
+$ cd /var/folders/qz/cb1zd5756hnd2tykv7z5sn_j8408d8/T/tmp03u8opux
+$ cat Procfile
 server0: redis-server server0.conf --protected-mode no --cluster-enabled yes --port 11000
 server1: redis-server server1.conf --protected-mode no --cluster-enabled yes --port 11001
 server2: redis-server server2.conf --protected-mode no --cluster-enabled yes --port 11002
 server3: redis-server server3.conf --protected-mode no --cluster-enabled yes --port 11003
 server4: redis-server server4.conf --protected-mode no --cluster-enabled yes --port 11004
 server5: redis-server server5.conf --protected-mode no --cluster-enabled yes --port 11005
-proxy: while test ! -f /var/folders/qz/cb1zd5756hnd2tykv7z5sn_j8408d8/T/tmp03u8opux/redis_cluster_ready ; do sleep 3 ; echo "waiting for cluster to be up to start proxy" ; done ; redis-cluster-proxy --port 11006 127.0.0.1:11000 127.0.0.1:11001 127.0.0.1:11002 127.0.0.1:11003 127.0.0.1:11004 127.0.0.1:11005
+proxy: while test ! -f $ROOT/redis_cluster_ready ; do sleep 3 ; echo "waiting for cluster to be up to start proxy" ; done ; redis-cluster-proxy --port 11006 127.0.0.1:11000 127.0.0.1:11001 127.0.0.1:11002 127.0.0.1:11003 127.0.0.1:11004 127.0.0.1:11005
 ```
+
+A Procfile is similzr to a Makefile. If you enter a folder with a Procfile and type `honcho` or `make`, all the referenced commands will be executed.
 
 Each redis server gets a minimal config file generated, and is started in cluster mode. The default port assigned to the first instance is 11000, and that can be configured. The number of cluster in the node can also be configured.
 
 ```
-$ cat /var/folders/qz/cb1zd5756hnd2tykv7z5sn_j8408d8/T/tmp03u8opux/server0.conf
+$ cat server0.conf
 cluster-config-file nodes-0.conf
 dbfilename dump0.rdb
 ```
@@ -57,7 +60,7 @@ OK
 The last line in the Procfile starts a redis cluster proxy instance, and configures it to point to our redis cluster. By default it runs on port *11006*.
 
 ```
-proxy: while test ! -f /var/folders/qz/cb1zd5756hnd2tykv7z5sn_j8408d8/T/tmp03u8opux/redis_cluster_ready ; do sleep 3 ; echo "waiting for cluster to be up to start proxy" ; done ; redis-cluster-proxy --port 11006 127.0.0.1:11000 127.0.0.1:11001 127.0.0.1:11002 127.0.0.1:11003 127.0.0.1:11004 127.0.0.1:11005
+proxy: while test ! -f $ROOT/redis_cluster_ready ; do sleep 3 ; echo "waiting for cluster to be up to start proxy" ; done ; redis-cluster-proxy --port 11006 127.0.0.1:11000 127.0.0.1:11001 127.0.0.1:11002 127.0.0.1:11003 127.0.0.1:11004 127.0.0.1:11005
 ```
 
 The odd line with the while expression is there to start the proxy only once the cluster has been setup. A simplified version of it is written below.

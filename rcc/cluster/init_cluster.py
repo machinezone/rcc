@@ -18,7 +18,6 @@ from rcc.client import RedisClient
 def makeServerConfig(
     root, readyPath, startPort=11000, masterNodeCount=3, password=None
 ):
-
     # create config files
     for i in range(masterNodeCount * 2):
 
@@ -41,6 +40,13 @@ def makeServerConfig(
     # Create a Procfile
     # server1: redis-server server1.conf --protected-mode no ...
     # server2: redis-server server2.conf --protected-mode no ...
+    # proxy: ...
+
+    # Environment file to set the root folder
+    envPath = os.path.join(root, f'.env')
+    with open(envPath, 'w') as f:
+        f.write(f'ROOT={root}')
+
     procfile = os.path.join(root, 'Procfile')
     with open(procfile, 'w') as f:
         for i in range(masterNodeCount * 2):
@@ -55,9 +61,13 @@ def makeServerConfig(
         # waiting
         # READY
         #
+        # The 'ready file' will be created when the cluster is ready.
+        #
         msg = 'waiting for cluster to be up to start proxy'
+        filename = os.path.basename(readyPath)
+        f.write('proxy: ')
         f.write(
-            f'proxy: while test ! -f {readyPath} ; do sleep 3 ; echo "{msg}" ; done ; '
+            f'while test ! -f $ROOT/{filename} ; do sleep 3 ; echo "{msg}" ; done ; '
         )
         f.write(f'redis-cluster-proxy --port {port+1} {ips}')
 
