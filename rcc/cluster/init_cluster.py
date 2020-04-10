@@ -15,7 +15,9 @@ from rcc.cluster.info import clusterCheck
 from rcc.client import RedisClient
 
 
-def makeServerConfig(root, startPort=11000, masterNodeCount=3, password=None):
+def makeServerConfig(
+    root, readyPath, startPort=11000, masterNodeCount=3, password=None
+):
 
     # create config files
     for i in range(masterNodeCount * 2):
@@ -32,6 +34,10 @@ def makeServerConfig(root, startPort=11000, masterNodeCount=3, password=None):
                 f.write(f'requirepass {password}' + '\n')
                 f.write(f'masterauth {password}' + '\n')
 
+    ips = ' '.join(
+        ['127.0.0.1:' + str(startPort + i) for i in range(masterNodeCount * 2)]
+    )
+
     # Create a Procfile
     # server1: redis-server server1.conf --protected-mode no ...
     # server2: redis-server server2.conf --protected-mode no ...
@@ -42,10 +48,20 @@ def makeServerConfig(root, startPort=11000, masterNodeCount=3, password=None):
             f.write(f'server{i}: redis-server server{i}.conf ')
             f.write(f'--protected-mode no --cluster-enabled yes --port {port}\n')
 
+        #
+        # Use a simple shell expression to only start the proxy when the server is ready
+        # $ while test ! -f /tmp/bar ; do sleep 1 ; echo waiting ; done ; echo READY
+        # waiting
+        # waiting
+        # READY
+        #
+        msg = 'waiting for cluster to be up to start proxy'
+        f.write(
+            f'proxy: while test ! -f {readyPath} ; do sleep 3 ; echo "{msg}" ; done ; '
+        )
+        f.write(f'redis-cluster-proxy --port {port+1} {ips}')
+
     # Print cluster init command
-    ips = ' '.join(
-        ['127.0.0.1:' + str(startPort + i) for i in range(masterNodeCount * 2)]
-    )
     host = 'localhost'
     port = startPort
 
@@ -88,7 +104,8 @@ async def checkOpenedPort(portRange, timeout: int):
                 sys.stderr.write('\n')
                 raise ValueError(f'Timeout trying to check opened ports {portRange}')
 
-            # FIXME there's probably a more portable thing that using nc
+            # FIXME there's probably a more portable thing that using nc ;
+            #       the timeout option (-w 1) is not portable
             cmd = f'nc -vz -w 1 localhost {port} 2> /dev/null'
             ret = os.system(cmd)
 
@@ -135,10 +152,12 @@ async def waitForAllConnectionsToBeReady(urls, password, timeout: int):
 async def runNewCluster(root, startPort, size, password):
     size = int(size)
 
+    # FIXME: port range does not deal with redis-cluster-proxy
     portRange = [port for port in range(startPort, startPort + 2 * size)]
     click.secho(f'1/6 Creating server config for range {portRange}', bold=True)
 
-    initCmd = makeServerConfig(root, startPort, size, password)
+    readyPath = os.path.join(root, 'redis_cluster_ready')
+    initCmd = makeServerConfig(root, readyPath, startPort, size, password)
 
     click.secho('2/6 Check that ports are opened', bold=True)
     await checkOpenedPort(portRange, timeout=10)
@@ -176,9 +195,9 @@ async def runNewCluster(root, startPort, size, password):
             await asyncio.sleep(1)
 
         click.secho('Cluster ready !', fg='green')
+        click.secho(f'Config files created in folder {root}', fg='cyan')
 
-        path = os.path.join(root, 'redis_cluster_ready')
-        with open(path, 'w') as f:
+        with open(readyPath, 'w') as f:
             f.write('cluster ready')
 
         while True:
