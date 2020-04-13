@@ -113,9 +113,24 @@ async def analyzeKeyspace(
         cmd = tokens[0][1:-1]  # we need to remove the double quotes from key and cmd
         cmd = cmd.upper()
 
-        # FIXME XREAD command should get special treatment
+        # Some keys are located in odd places
         if len(tokens) > 1:
             key = tokens[1][1:-1]
+
+            if cmd in ('XREAD', 'XREADGROUP'):
+                try:
+                    idx = tokens.index('"STREAMS"') + 1
+                except ValueError:
+                    raise ValueError(
+                        "{0} arguments do not contain STREAMS operand".format(cmd)
+                    )
+                key = tokens[idx]
+            elif cmd in ('XGROUP', 'XINFO'):
+                key = tokens[2]
+            else:
+                key = tokens[1]
+
+            key = key[1:-1]
             obj.keys[key] += 1
 
         # We need key and command
