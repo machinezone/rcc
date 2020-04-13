@@ -21,8 +21,11 @@ You can see what the install script is doing first [here](https://github.com/mac
 ### For folks familiar with Python
 
 ```
-# Create a virtualenv first, then
+cd $HOME # or anywhere you want
+python3 -mvenv venv
+source venv/bin/activate
 pip install rcc
+rcc
 ```
 
 ## Rationale
@@ -107,18 +110,6 @@ Here is how the previous cluster usage distribution looks after resharding for u
   172.26.42.94:6379 [536849] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
 172.25.145.138:6379 [499993] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
  172.26.32.220:6379 [495581] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-```
-
-## Installation
-
-If you are familiar with python or pip this should be easy.
-
-```
-cd $HOME # or anywhere you want
-python3 -mvenv venv
-source venv/bin/activate
-pip install rcc
-rcc
 ```
 
 ## Random
