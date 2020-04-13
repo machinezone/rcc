@@ -18,7 +18,7 @@ python3 -m venv venv || {
     exit 1
 }
 
-venv/bin/pip3 install rcc || {
+venv/bin/pip3 install -U rcc || {
     echo "rcc failed to install. You might be missing a C compiler to install hiredis"
     echo "Install XCode, XCode developer tools, clang or gcc"
     exit 1
