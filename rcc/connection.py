@@ -40,6 +40,7 @@ class Connection(object):
 
         self.read_size = 4 * 1024
 
+        # FIXME: multiplexing mode is untested
         self.multiplexing = multiplexing
 
         if self.multiplexing:
@@ -150,12 +151,20 @@ class Connection(object):
     def handlePubSub(self, cmd):
         if self.multiplexing:
             if cmd in ('SUBSCRIBE', 'PSUBSCRIBE'):
-                self.inPubSub = True
-                self.pubSubEvent.clear()
+                self.takeOver()
 
-            if cmd in ('UNSUBSCRIBE', 'PUNSUBSCRIBE'):
-                self.inPubSub = False
-                self.pubSubEvent.set()
+            elif cmd in ('UNSUBSCRIBE', 'PUNSUBSCRIBE'):
+                self.release()
+
+    def takeOver(self):
+        if self.multiplexing:
+            self.inPubSub = False
+            self.pubSubEvent.set()
+
+    def release(self):
+        if self.multiplexing:
+            self.inPubSub = False
+            self.pubSubEvent.set()
 
     def writeString(self, buf, data):
         buf.write(b'$%d\r\n' % len(data))

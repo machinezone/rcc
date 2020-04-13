@@ -10,7 +10,7 @@ from rcc.cluster.keyspace_analyzer import analyzeKeyspace
 from rcc.client import RedisClient
 
 
-async def coro():
+async def coro(monitor):
     '''The caveat with this test is that external clients could
     be hitting redis as well, and we would get notifications for that
     '''
@@ -18,8 +18,12 @@ async def coro():
     redisPassword = ''
     redisClient = RedisClient(redisUrl, redisPassword)
 
-    # now analyze keyspace for 2 seconds
-    task = asyncio.create_task(analyzeKeyspace(redisUrl, redisPassword, 2))
+    # now analyze keyspace, wait for 2 seconds
+    task = asyncio.create_task(
+        analyzeKeyspace(
+            redisUrl, redisPassword, 2, progress=True, count=-1, monitor=monitor
+        )
+    )
 
     # wait a tiny bit so that the analyzer is ready
     # (it needs to make a couple of pubsub subscriptions)
@@ -47,12 +51,16 @@ async def coro():
     assert len(weights) >= 50
 
     # Make sure we did capture one xadd
-    assert 'xadd' in keySpace.commands
+    assert 'XADD' in keySpace.commands
 
     # cleanup
     for key in keys:
         await redisClient.send('DEL', key)
 
 
-def test_analyze_keyspace():
-    asyncio.run(coro())
+def test_analyze_keyspace_with_notifications():
+    asyncio.run(coro(monitor=False))
+
+
+def test_analyze_keyspace_with_monitor():
+    asyncio.run(coro(monitor=True))

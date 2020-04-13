@@ -48,6 +48,7 @@ async def analyzeKeyspace(
     timeout: int,
     progress: bool = True,
     count: int = -1,
+    monitor: bool = False,
 ):
     pattern = '__key*__:*'
 
@@ -73,16 +74,51 @@ async def analyzeKeyspace(
     #
     keyspaceConfig = 'AE'
 
-    async def cb(client, obj, message):
+    async def pubSubCallback(client, obj, message):
+        '''Need to extract a key and a command from the pubsub payload'''
+
         if obj.progress:
             sys.stderr.write('.')
             sys.stderr.flush()
 
         msg = message[2].decode()
         _, _, cmd = msg.partition(':')
+        cmd = cmd.upper()
 
         key = message[3].decode()
         obj.keys[key] += 1
+        obj.notifications += 1
+
+        node = f'{client.host}:{client.port}'
+        obj.nodes[node] += 1
+        obj.commands[cmd] += 1
+
+    async def monitorCallback(client, obj, message):
+        '''Need to extract a key and a command from the monitor payload'''
+
+        if obj.progress:
+            sys.stderr.write('.')
+            sys.stderr.flush()
+
+        #
+        # We need to skip the beginning of such lines
+        # 1586739509.775473 [0 [::1]:54588] "XADD" "58c52262_channel_99" "MAXLEN" ...
+        #
+        line = message.decode()
+
+        # FIXME / parsing is not robust, if there are spaces in keys
+        tokens = line.split()
+        tokens = tokens[3:]
+
+        cmd = tokens[0][1:-1]  # we need to remove the double quotes from key and cmd
+        cmd = cmd.upper()
+
+        # FIXME XREAD command should get special treatment
+        if len(tokens) > 1:
+            key = tokens[1][1:-1]
+            obj.keys[key] += 1
+
+        # We need key and command
         obj.notifications += 1
 
         node = f'{client.host}:{client.port}'
@@ -95,19 +131,25 @@ async def analyzeKeyspace(
 
     # First we need to make sure keyspace notifications are ON
     # Do this manually with redis-cli -p 10000 config set notify-keyspace-events KEAt
-    confs = []
-    for client in clients:
-        conf = await client.send('CONFIG', 'GET', 'notify-keyspace-events')
-        if conf[1]:
-            print(f'{client} current keyspace config: {conf[1].decode()}')
-            confs.append(conf[1].decode())
+    if not monitor:
+        confs = []
+        for client in clients:
+            conf = await client.send('CONFIG', 'GET', 'notify-keyspace-events')
+            if conf[1]:
+                print(f'{client} current keyspace config: {conf[1].decode()}')
+                confs.append(conf[1].decode())
 
-        # Set the new conf
-        await client.send('CONFIG', 'SET', 'notify-keyspace-events', keyspaceConfig)
+            # Set the new conf
+            await client.send('CONFIG', 'SET', 'notify-keyspace-events', keyspaceConfig)
 
     try:
         for client in clients:
-            task = asyncio.create_task(client.psubscribe(pattern, cb, keySpace))
+            if monitor:
+                task = asyncio.create_task(client.monitor(monitorCallback, keySpace))
+            else:
+                task = asyncio.create_task(
+                    client.psubscribe(pattern, pubSubCallback, keySpace)
+                )
             tasks.append(task)
 
         if count > 0:
@@ -123,13 +165,13 @@ async def analyzeKeyspace(
             await task
 
     finally:
-        # Now restore the notification
-        for client, conf in zip(clients, confs):
-            # reset the previous conf
-            print(f'resetting old config {conf}')
-            await client.send('CONFIG', 'SET', 'notify-keyspace-events', conf)
+        if not monitor:
+            # Now restore the notification
+            for client, conf in zip(clients, confs):
+                # reset the previous conf
+                print(f'resetting old config {conf}')
+                await client.send('CONFIG', 'SET', 'notify-keyspace-events', conf)
 
-    # FIXME: note how many things
     keySpace.describe()
 
     return keySpace

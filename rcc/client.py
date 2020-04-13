@@ -16,10 +16,11 @@ from rcc.pool import ConnectionPool
 
 from rcc.commands.cluster import ClusterCommandsMixin
 from rcc.commands.pubsub import PubSubCommandsMixin
+from rcc.commands.generic import GenericCommandsMixin
 from rcc.response import convertResponse
 
 
-class RedisClient(ClusterCommandsMixin, PubSubCommandsMixin):
+class RedisClient(ClusterCommandsMixin, PubSubCommandsMixin, GenericCommandsMixin):
     def __init__(self, url: str, password, multiplexing=False):
         self.url = url
         self.password = password
