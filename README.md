@@ -8,7 +8,26 @@
 
 A Redis Cluster Client with a cli line tools in the spirit of redis-trib.
 
+## Installation
+
+### UNIX one liner
+
+```
+/bin/sh -c `curl -fsSL https://raw.githubusercontent.com/machinezone/rcc/master/tools/install.sh`
+```
+
+You can see what the install script is doing first [here](https://github.com/machinezone/rcc/blob/master/tools/install.sh).
+
+### For folks familiar with Python
+
+```
+# Create a virtualenv first, then
+pip install rcc
+```
+
 ## Rationale
+
+rcc started as an attempt at writing an asyncio redis-cluster aware python client. It is now mostly used a redis cluster tool, built on a minimal but functional redis client library.
 
 The main asyncio redis library, aioredis does not support redis cluster at this point. There is another library named aredis which has cluster support, but which has some small bugs for which pull requests existed, that were not merged until recently. Getting a redis client to work is not terribly hard, thanks to the design of redis, so I started this project and got it to work in a limited amount of time.
 
