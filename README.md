@@ -13,7 +13,7 @@ A Redis Cluster Client with a cli line tools in the spirit of redis-trib.
 ### UNIX one liner
 
 ```
-/bin/sh -c `curl -fsSL https://raw.githubusercontent.com/machinezone/rcc/master/tools/install.sh`
+/bin/sh -c "`curl -fsSL https://raw.githubusercontent.com/machinezone/rcc/master/tools/install.sh`"
 ```
 
 You can see what the install script is doing first [here](https://github.com/machinezone/rcc/blob/master/tools/install.sh).
