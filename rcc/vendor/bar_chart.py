@@ -64,10 +64,11 @@ def run(input_stream, options):
     # Try to use the terminal width to get as much space for the labels
     width = os.get_terminal_size().columns
     max_label_length = int(width / 1.5)
+    max_width = 120 if width > 120 else 80
 
     max_length = max([len(key) for key in list(data.keys())])
     max_length = min(max_length, max_label_length)
-    value_characters = 80 - max_length
+    value_characters = max_width - max_length
     max_value = max(data.values())
     scale = int(math.ceil(float(max_value) / value_characters))
     scale = max(1, scale)
