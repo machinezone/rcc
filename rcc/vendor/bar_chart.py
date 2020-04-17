@@ -19,6 +19,7 @@ Generate an ascii bar chart for input data
 
 https://github.com/bitly/data_hacks
 """
+import os
 import sys
 import math
 from collections import defaultdict
@@ -60,8 +61,12 @@ def run(input_stream, options):
         print("Error: no data")
         sys.exit(1)
 
+    # Try to use the terminal width to get as much space for the labels
+    width = os.get_terminal_size().columns
+    max_label_length = int(width / 1.5)
+
     max_length = max([len(key) for key in list(data.keys())])
-    max_length = min(max_length, 50)
+    max_length = min(max_length, max_label_length)
     value_characters = 80 - max_length
     max_value = max(data.values())
     scale = int(math.ceil(float(max_value) / value_characters))
