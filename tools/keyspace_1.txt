@@ -1,0 +1,7 @@
+We will capture at least 5 commands, in MONITOR mode.
+We have a script that will emit 5 commands, SET and GET, using 2 keys.
+
+rcc keyspace will display multiple sections with keys, commands and
+redis hosts receiving commands.
+
+-> rcc keyspace -c 5 -m

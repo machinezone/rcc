@@ -1,0 +1,1 @@
+termtosvg ~/src/foss/bsergean.github.io/redis_conf_2020/demo_keyspace_simple.svg -c 'tmux a'

@@ -75,6 +75,8 @@ The 2 remarquable tools are:
 
 ### Keyspace analysis tool
 
+![picture](demo_keyspace_simple.svg)
+
 The *keyspace* command will turn on redis keyspace notifications and tell you what your _hot_ keys are. It will output a csv file containing a list of keys accessed by commands, with a weight representing their access frequency. The *keyspace* command can also parse the output of the *MONITOR* command with the -m option, which will not require to enable keyspace notifications.
 
 The tool will display informations visually as well, such as the distribution of keys/commands amongst nodes. It is very helpful to know if your cluster provides good balancing, or whether you should reshard it.
