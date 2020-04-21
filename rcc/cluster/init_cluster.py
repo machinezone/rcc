@@ -88,7 +88,8 @@ def makeServerConfig(
 
 async def runServer(root, startPort):
     try:
-        proc = await asyncio.create_subprocess_shell('honcho start', cwd=root)
+        honcho = os.path.join(os.path.dirname(sys.executable), 'honcho')
+        proc = await asyncio.create_subprocess_shell(f'{honcho} start', cwd=root)
         stdout, stderr = await proc.communicate()
     except asyncio.CancelledError:
         print('Cancelling honcho')

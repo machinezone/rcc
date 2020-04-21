@@ -1,0 +1,8 @@
+Run keyspace analysis on a redis cluster, running on port 11000
+
+The nodes section should display data for commands received on
+multiple nodes.
+
+Specify a redis url with the -r option
+
+-> rcc keyspace -c 5 -m -r redis://localhost:11000

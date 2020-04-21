@@ -1,1 +1,8 @@
+
+# keyspace simple
+
 termtosvg ~/src/foss/bsergean.github.io/redis_conf_2020/demo_keyspace_simple.svg -c 'tmux a'
+
+# keyspace cluster
+
+termtosvg ~/src/foss/bsergean.github.io/redis_conf_2020/demo_keyspace_cluster.svg -c 'tmux a -t keyspace_cluster-13'
