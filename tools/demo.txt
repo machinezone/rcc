@@ -6,3 +6,7 @@ termtosvg ~/src/foss/bsergean.github.io/redis_conf_2020/demo_keyspace_simple.svg
 # keyspace cluster
 
 termtosvg ~/src/foss/bsergean.github.io/redis_conf_2020/demo_keyspace_cluster.svg -c 'tmux a -t keyspace_cluster-13'
+
+# chat
+
+termtosvg ~/src/foss/bsergean.github.io/redis_conf_2020/demo_chat.svg -c 'tmux a -t chat'
