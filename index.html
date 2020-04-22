@@ -89,6 +89,10 @@
             
             <li class="nav-item" data-level="1"><a href="#general" class="nav-link">General</a>
               <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#installation" class="nav-link">Installation</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
             <li class="nav-item" data-level="2"><a href="#rationale" class="nav-link">Rationale</a>
               <ul class="nav flex-column">
               </ul>
@@ -114,11 +118,27 @@
 <a href="https://img.shields.io/pypi/pyversions/rcc"><img alt="PyPI Python Versions" src="https://img.shields.io/pypi/pyversions/rcc.svg" /></a>
 <a href="https://img.shields.io/pypi/l/rcc"><img alt="License" src="https://img.shields.io/pypi/l/rcc.svg" /></a>
 <a href="https://img.shields.io/pypi/wheel/rcc"><img alt="Wheel" src="https://img.shields.io/pypi/wheel/rcc.svg" /></a></p>
-<p>A Redis Cluster Client</p>
+<p>A Redis Cluster Client
+A Redis Cluster Client with a cli line tools in the spirit of redis-trib.</p>
+<h2 id="installation">Installation</h2>
+<h3 id="unix-one-liner">UNIX one liner</h3>
+<pre><code>/bin/sh -c &quot;`curl -fsSL https://raw.githubusercontent.com/machinezone/rcc/master/tools/install.sh`&quot;
+</code></pre>
+
+<p>You can see what the install script is doing first <a href="https://github.com/machinezone/rcc/blob/master/tools/install.sh">here</a>.</p>
+<h3 id="for-folks-familiar-with-python">For folks familiar with Python</h3>
+<pre><code>cd $HOME # or anywhere you want
+python3 -mvenv venv
+source venv/bin/activate
+pip install rcc
+rcc
+</code></pre>
+
 <h2 id="rationale">Rationale</h2>
-<p>The main asyncio redis library does not support redis cluster at this point. There is another library named aredis which has cluster support, but which has some small bugs for which pull requests existed, that were not merged until recently. Getting a redis client to work is not terribly hard, thanks to the design of redis, so I started this project and got it to work in a limited amount of time.</p>
+<p>rcc started as an attempt at writing an asyncio redis-cluster aware python client. It is now mostly used a redis cluster tool, built on a minimal but functional redis client library.</p>
+<p>The main asyncio redis library, aioredis does not support redis cluster at this point. There is another library named aredis which has cluster support, but which has some small bugs for which pull requests existed, that were not merged until recently. Getting a redis client to work is not terribly hard, thanks to the design of redis, so I started this project and got it to work in a limited amount of time.</p>
 <h2 id="tools">Tools</h2>
-<p>2 tools come with this package, as subcommands of rcc.</p>
+<p>Several tools come with this package, as subcommands of the main cli named <code>rcc</code>. Some documentation (wip) is available <a href="https://machinezone.github.io/rcc/">here</a>.</p>
 <ul>
 <li>keyspace / will turn on redis keyspace notifications and tell you what your <em>hot</em> keys are.</li>
 <li>binpacking / will help reshard your cluster in an optimal way based on your usage. This will consume the output of the keyspace command</li>
@@ -208,5 +228,5 @@
 
 <!--
 MkDocs version : 1.1
-Build Date UTC : 2020-04-18 12:58:56
+Build Date UTC : 2020-04-22 01:10:10
 -->
