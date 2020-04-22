@@ -69,7 +69,12 @@ def makeServerConfig(
         f.write(
             f'while test ! -f $ROOT/{filename} ; do sleep 3 ; echo "{msg}" ; done ; '
         )
-        f.write(f'redis-cluster-proxy --port {port+1} {ips}')
+
+        auth = ''
+        if password:
+            auth += f'--auth={password}'
+
+        f.write(f'redis-cluster-proxy {auth} --port {port+1} {ips}')
 
     # Print cluster init command
     host = 'localhost'
