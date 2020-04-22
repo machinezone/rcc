@@ -239,7 +239,7 @@ async def binPackingReshardCoroutine(
         if not consistent:
             return False
 
-    print(f'total migrated slots: {migratedSlots}')
+    print(f'total migrated slots: {totalMigratedSlots}')
     return True
 
 
