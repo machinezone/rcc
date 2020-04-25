@@ -62,3 +62,29 @@ clean:
 	rm -f *.pyc
 	rm -rf rcc.egg-info
 	rm -rf build
+
+#
+# Docker
+#
+NAME   := ${DOCKER_REPO}/rcc
+TAG    := $(shell python tools/compute_version_from_git.py)
+IMG    := ${NAME}:${TAG}
+BUILD  := ${NAME}:build
+PROD   := ${NAME}:production
+
+docker_tag:
+	docker tag ${IMG} ${PROD}
+	docker push ${PROD}
+	docker push ${IMG}
+
+docker:
+	git clean -dfx -e venv -e cobras.egg-info/ -e DOCKER_VERSION
+	docker build -t ${IMG} .
+	docker tag ${IMG} ${BUILD}
+	docker tag ${IMG} ${PROD}
+
+docker_push: docker_tag
+
+deploy: docker docker_push
+
+dummy: docker
