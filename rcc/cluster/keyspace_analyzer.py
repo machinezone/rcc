@@ -22,14 +22,8 @@ class KeySpace(object):
         self.commands = collections.defaultdict(int)
 
     def describe(self):
-        print(f'notifications {self.notifications}')
-        print(f'accessed keys {self.keys}')
-        print(f'commands {self.commands}')
-        print(f'nodes {self.nodes}')
-
         if len(self.nodes) > 1:
             self.describeData('Nodes', self.nodes)
-        print()
 
     def describeData(self, title, data):
         print(f'== {title} ==')

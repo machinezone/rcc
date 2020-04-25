@@ -43,6 +43,7 @@ def keyspace(redis_urls, port, redis_password, timeout, path, count, monitor, ma
     temp = temp[:max_keys]
     keys = {v: k for k, v in temp}
 
+    print()
     asciiPlot(f'Top {max_keys} keys', keys)
     asciiPlot('Commands', keySpace.commands)
     asciiPlot('Nodes', keySpace.nodes)
