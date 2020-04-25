@@ -29,7 +29,7 @@ _______   ____  ____
 
 rcc / Redis Cluster Client / cli
     """
-    uvloop.start()
+    uvloop.install()
     if verbose:
         level = 'INFO' if verbose == 1 else 'DEBUG'
         coloredlogs.install(level=level, fmt=LOGGING_FORMAT)
