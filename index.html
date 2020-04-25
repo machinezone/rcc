@@ -134,6 +134,11 @@ pip install rcc
 rcc
 </code></pre>
 
+<h3 id="docker">Docker</h3>
+<pre><code>$ docker run -it docker.pkg.github.com/machinezone/rcc/rcc:production --version
+rcc, version 0.9.48
+</code></pre>
+
 <h2 id="rationale">Rationale</h2>
 <p>rcc started as an attempt at writing an asyncio redis-cluster aware python client. It is now mostly used a redis cluster tool, built on a minimal but functional redis client library.</p>
 <p>The main asyncio redis library, aioredis does not support redis cluster at this point. There is another library named aredis which has cluster support, but which has some small bugs for which pull requests existed, that were not merged until recently. Getting a redis client to work is not terribly hard, thanks to the design of redis, so I started this project and got it to work in a limited amount of time.</p>
@@ -228,5 +233,5 @@ rcc
 
 <!--
 MkDocs version : 1.1
-Build Date UTC : 2020-04-22 01:10:10
+Build Date UTC : 2020-04-25 17:16:41
 -->
