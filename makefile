@@ -2,7 +2,10 @@
 
 all: flake
 
-dev:
+update_version:
+	python tools/compute_version_from_git.py > DOCKER_VERSION
+
+dev: update_version
 	@echo "--> Installing Python dependencies"
 	# order matters here, base package must install first
 	pip install -U pip
@@ -11,7 +14,7 @@ dev:
 	pip install -e .
 	pip install "file://`pwd`#egg=rcc[dev]"
 
-upload:
+upload: update_version
 	rm -rf dist/*
 	python setup.py sdist bdist_wheel
 	twine upload dist/*.whl
@@ -66,19 +69,19 @@ clean:
 #
 # Docker
 #
-NAME   := ${DOCKER_REPO}/rcc
-TAG    := $(shell python tools/compute_version_from_git.py)
-IMG    := ${NAME}:${TAG}
-BUILD  := ${NAME}:build
-PROD   := ${NAME}:production
+DOCKER_REPO := docker.pkg.github.com/machinezone/rcc
+NAME        := ${DOCKER_REPO}/rcc
+TAG         := $(shell python tools/compute_version_from_git.py)
+IMG         := ${NAME}:${TAG}
+BUILD       := ${NAME}:build
+PROD        := ${NAME}:production
 
 docker_tag:
 	docker tag ${IMG} ${PROD}
 	docker push ${PROD}
 	docker push ${IMG}
 
-docker:
-	python tools/compute_version_from_git.py > DOCKER_VERSION
+docker: update_version
 	git clean -dfx -e venv -e cobras.egg-info/ -e DOCKER_VERSION
 	docker build -t ${IMG} .
 	docker tag ${IMG} ${BUILD}
