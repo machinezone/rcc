@@ -28,6 +28,13 @@ pip install rcc
 rcc
 ```
 
+### Docker
+
+```
+$ docker run -it docker.pkg.github.com/machinezone/rcc/rcc:production --version
+rcc, version 0.9.48
+```
+
 ## Rationale
 
 rcc started as an attempt at writing an asyncio redis-cluster aware python client. It is now mostly used a redis cluster tool, built on a minimal but functional redis client library.
