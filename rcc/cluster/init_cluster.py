@@ -185,7 +185,8 @@ async def runNewCluster(root, startPort, size, password):
         # Check that all connections are ready
         click.secho(f'4/6 Wait for the cluster nodes to be running', bold=True)
         urls = [
-            f'redis://localhost:{port}' for port in range(startPort, startPort + size)
+            f'redis://localhost:{port}'
+            for port in range(startPort, startPort + 2 * size)
         ]
         await waitForAllConnectionsToBeReady(urls, password, timeout=5)
 
