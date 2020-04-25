@@ -17,9 +17,10 @@ coloredlogs.install(level='WARNING', fmt=LOGGING_FORMAT)
 
 
 @click.option('--verbose', '-v', envvar='RCC_VERBOSE', count=True)
+@click.option('--uv', '-u', envvar='RCC_UVLOOP', is_flag=True, help='Use uvloop')
 @click.group()
 @click.version_option()
-def main(verbose):
+def main(verbose, uv):
     """\b
 _______   ____  ____
 \\_  __ \\_/ ___\\/ ___\\
@@ -29,7 +30,9 @@ _______   ____  ____
 
 rcc / Redis Cluster Client / cli
     """
-    uvloop.install()
+    if uv:
+        uvloop.install()
+
     if verbose:
         level = 'INFO' if verbose == 1 else 'DEBUG'
         coloredlogs.install(level=level, fmt=LOGGING_FORMAT)
