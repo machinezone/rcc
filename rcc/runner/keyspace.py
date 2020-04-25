@@ -23,23 +23,15 @@ from rcc.plot import asciiPlot
 @click.option('--timeout', '-t', default=5)
 @click.option('--port', default=6379)
 @click.option('--path', '-w', default='weights.csv')
-@click.option('--quiet', '-q', is_flag=True)
 @click.option('--count', '-c', default=-1)
 @click.option('--monitor', '-m', is_flag=True)
 @click.option('--max_keys', '-k', default=50)
-def keyspace(
-    redis_urls, port, redis_password, timeout, path, quiet, count, monitor, max_keys
-):
+def keyspace(redis_urls, port, redis_password, timeout, path, count, monitor, max_keys):
     '''Analyze the keyspace'''
 
     keySpace = asyncio.run(
         analyzeKeyspace(
-            redis_urls,
-            redis_password,
-            timeout,
-            progress=not quiet,
-            count=count,
-            monitor=monitor,
+            redis_urls, redis_password, timeout, count=count, monitor=monitor
         )
     )
     weights = keySpace.keys
