@@ -5,11 +5,11 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 # flake8: noqa
 '''
 
+import logging
 from pkgutil import walk_packages
 
 import click
-import logging
-
+import uvloop
 import coloredlogs
 
 LOGGING_FORMAT = '%(asctime)s %(levelname)s %(message)s'
@@ -29,6 +29,7 @@ _______   ____  ____
 
 rcc / Redis Cluster Client / cli
     """
+    uvloop.start()
     if verbose:
         level = 'INFO' if verbose == 1 else 'DEBUG'
         coloredlogs.install(level=level, fmt=LOGGING_FORMAT)
