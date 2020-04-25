@@ -1,8 +1,17 @@
 import os
+import sys
 
 
 def computeVersion():
-    fullVersion = os.popen('git describe', 'r').read().splitlines()[0]
+    try:
+        gitDescribeOutPut = os.popen('git describe', 'r').read()
+    except Exception:
+        with open('DOCKER_VERSION') as f:
+            return f.read()
+
+    sys.stderr.write(f'git describe -> {gitDescribeOutPut}\n')
+
+    fullVersion = gitDescribeOutPut.splitlines()[0]
     assert fullVersion[0] == 'v'
 
     parts = fullVersion.split('-')

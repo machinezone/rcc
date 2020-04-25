@@ -78,6 +78,7 @@ docker_tag:
 	docker push ${IMG}
 
 docker:
+	python tools/compute_version_from_git.py > DOCKER_VERSION
 	git clean -dfx -e venv -e cobras.egg-info/ -e DOCKER_VERSION
 	docker build -t ${IMG} .
 	docker tag ${IMG} ${BUILD}
