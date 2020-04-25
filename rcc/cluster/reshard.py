@@ -19,13 +19,14 @@ import collections
 import csv
 import logging
 import os
-import sys
 import time
 
 from rcc.client import RedisClient
 from rcc.hash_slot import getHashSlot
 from rcc.binpack import to_constant_bin_number
 from rcc.cluster.info import getSlotsToNodesMapping, clusterCheck
+
+import click
 
 
 def makeClientfromNode(node, redisPassword):
@@ -86,7 +87,7 @@ async def migrateSlot(
         if len(keys) == 0:
             break
 
-        print('migrating', len(keys), 'keys')
+        logging.info('migrating', len(keys), 'keys')
         host = destinationNode.ip
         port = destinationNode.port
         db = 0
@@ -123,15 +124,12 @@ async def migrateSlot(
 
 
 async def waitForClusterViewToBeConsistent(redisUrls, redisPassword, timeout):
-    print('Waiting for cluster view to be consistent...')
+    logging.info('Waiting for cluster view to be consistent...')
     start = time.time()
 
     # give us 'timeout' seconds max for all nodes to agree
 
     while True:
-        sys.stderr.write('.')
-        sys.stderr.flush()
-
         ok = await clusterCheck(redisUrls, redisPassword)
         if ok:
             break
@@ -190,56 +188,64 @@ async def binPackingReshardCoroutine(
 
     totalMigratedSlots = 0
 
-    for binSlots, node in zip(allSlots, masterNodes):
+    count = sum(len(binSlots) for binSlots in allSlots)
+    label = f'Migrating {count} hash slots'
+    with click.progressbar(length=count, label=label) as bar:
 
-        print(f'== {node.node_id} / {node.ip}:{node.port} ==')
-        migratedSlots = 0
+        for binSlots, node in zip(allSlots, masterNodes):
 
-        if nodeId is not None and node.node_id != nodeId:
-            continue
+            logging.info(f'== {node.node_id} / {node.ip}:{node.port} ==')
+            migratedSlots = 0
 
-        for slot in binSlots:
-            sourceNode = slotToNodes[slot]
-            logging.debug(f'{slot} owned by {sourceNode.node_id}')
+            if nodeId is not None and node.node_id != nodeId:
+                bar.update(len(binSlots))
+                continue
 
-        # Migrate each slot
-        for slot in binSlots:
-            # recompute the slots to node mapping after each node migration
-            slotToNodes = await getSlotsToNodesMapping(redisUrls, redisPassword)
+            for slot in binSlots:
+                sourceNode = slotToNodes[slot]
+                logging.debug(f'{slot} owned by {sourceNode.node_id}')
 
-            sourceNode = slotToNodes[slot]
-            if sourceNode.node_id != node.node_id:
+            # Migrate each slot
+            for slot in binSlots:
+                # recompute the slots to node mapping after each node migration
+                slotToNodes = await getSlotsToNodesMapping(redisUrls, redisPassword)
 
-                ret = await migrateSlot(
-                    masterClients, redisPassword, slot, sourceNode, node, dry
-                )
-                if not ret:
-                    return False
+                sourceNode = slotToNodes[slot]
+                if sourceNode.node_id == node.node_id:
+                    logging.info(f'slot {slot} already placed correctly')
+                else:
+                    ret = await migrateSlot(
+                        masterClients, redisPassword, slot, sourceNode, node, dry
+                    )
+                    if not ret:
+                        return False
 
-                migratedSlots += 1
+                    migratedSlots += 1
 
-        print(f'migrated {migratedSlots} slots')
-        totalMigratedSlots += migratedSlots
+                bar.update(1)
 
-        #
-        # This section is key.
-        # We periodically make sure that all nodes in the cluster agree on their view
-        # of the cluster, mostly on how slots are allocated
-        #
-        # Without this wait, if we try to keep on moving other slots
-        # the cluster will become broken,
-        # and commands such as redis-cli --cluste check will report it as inconsistent
-        #
-        # note that existing redis cli command do not migrate to multiple nodes at once
-        # while this script does
-        #
-        consistent = await waitForClusterViewToBeConsistent(
-            redisUrls, redisPassword, timeout
-        )
-        if not consistent:
-            return False
+            logging.info(f'migrated {migratedSlots} slots')
+            totalMigratedSlots += migratedSlots
 
-    print(f'total migrated slots: {totalMigratedSlots}')
+            #
+            # This section is key.
+            # We periodically make sure that all nodes in the cluster agree
+            # on their view of the cluster, mostly on how slots are allocated
+            #
+            # Without this wait, if we try to keep on moving other slots
+            # the cluster will become broken, and commands such as
+            # redis-cli --cluster check will report it as inconsistent
+            #
+            # note that existing redis cli command do not migrate to multiple
+            # nodes at once # while this script does
+            #
+            consistent = await waitForClusterViewToBeConsistent(
+                redisUrls, redisPassword, timeout
+            )
+            if not consistent:
+                return False
+
+    logging.info(f'Migrated {totalMigratedSlots} slots in total')
     return True
 
 
