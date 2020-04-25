@@ -27,4 +27,4 @@ WORKDIR /home/app
 RUN pip install --cache-dir=/opt/pip_cache --user -e .
 
 EXPOSE 8765
-CMD ["rcc"]
+ENTRYPOINT ["rcc"]
