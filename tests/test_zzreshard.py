@@ -43,17 +43,20 @@ async def coro():
     redisUrl = f'redis://localhost:{startPort}'
     size = 3
     redisPassword = ''
-    task = asyncio.create_task(runNewCluster(root, startPort, size, redisPassword))
+    redisUser = ''
+    task = asyncio.create_task(
+        runNewCluster(root, startPort, size, redisPassword, redisUser)
+    )
 
     # Wait until cluster is initialized
     while not os.path.exists(clusterReadyFile):
         await asyncio.sleep(0.1)
 
-    client = makeClient(startPort, redisPassword)
+    client = makeClient(startPort, redisPassword, redisUser)
     await checkStrings(client)
 
     # now analyze keyspace for 3 seconds
-    task = asyncio.create_task(analyzeKeyspace(redisUrl, redisPassword, 3))
+    task = asyncio.create_task(analyzeKeyspace(redisUrl, redisPassword, redisUser, 3))
 
     # wait a tiny bit so that the analyzer is ready
     # (it needs to make a couple of pubsub subscriptions)
@@ -85,23 +88,25 @@ async def coro():
 
     print('weights', weights)
     signature, balanced, fullCoverage = await getClusterSignature(
-        redisUrl, redisPassword
+        redisUrl, redisPassword, redisUser
     )
     assert balanced
     assert fullCoverage
 
-    ret = await binPackingReshardCoroutine(redisUrl, redisPassword, weights, timeout=15)
+    ret = await binPackingReshardCoroutine(
+        redisUrl, redisPassword, redisUser, weights, timeout=15
+    )
     assert ret
 
     newSignature, balanced, fullCoverage = await getClusterSignature(
-        redisUrl, redisPassword
+        redisUrl, redisPassword, redisUser
     )
     assert signature != newSignature
     assert balanced
     assert fullCoverage
 
     # Now run cluster check
-    await runRedisCliClusterCheck(startPort, redisPassword)
+    await runRedisCliClusterCheck(startPort, redisPassword, redisUser)
 
     # Validate that we can read back what we wrote, after resharding
     for i in range(1, 100):
@@ -115,7 +120,9 @@ async def coro():
 
     # Do another reshard. This one should be a no-op
     # This should return statistics about the resharding
-    await binPackingReshardCoroutine(redisUrl, redisPassword, weights, timeout=15)
+    await binPackingReshardCoroutine(
+        redisUrl, redisPassword, redisUrl, weights, timeout=15
+    )
 
 
 def test_reshard():

@@ -8,14 +8,14 @@ import asyncio
 from rcc.client import RedisClient
 
 
-def makeClient(port=None, redis_password=''):
+def makeClient(port=None, redisPassword='', redisUser=''):
     # redis_url = 'redis://localhost:10000'  # for cluster
-    redis_url = 'redis://localhost'
+    redisUrl = 'redis://localhost'
 
     if port is not None:
-        redis_url += f':{port}'
+        redisUrl += f':{port}'
 
-    client = RedisClient(redis_url, redis_password)
+    client = RedisClient(redisUrl, redisPassword, redisUser)
     return client
 
 

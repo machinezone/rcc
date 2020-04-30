@@ -11,8 +11,10 @@ import click
 from rcc.client import RedisClient
 
 
-async def pub(redis_url, redis_password, channel, random_channel, msg, batch, maxLen):
-    client = RedisClient(redis_url, redis_password)
+async def pub(
+    redisUrl, redisPassword, redisUser, channel, random_channel, msg, batch, maxLen
+):
+    client = RedisClient(redisUrl, redisPassword, redisUser)
     await client.connect()
 
     if batch:
@@ -34,14 +36,15 @@ async def pub(redis_url, redis_password, channel, random_channel, msg, batch, ma
 @click.command()
 @click.option('--redis_url', '-r', default='redis://localhost')
 @click.option('--port', '-p')
-@click.option('--redis_password')
+@click.option('--password', '-a')
+@click.option('--user')
 @click.option('--channel', default='foo')
 @click.option('--random_channel', is_flag=True)
 @click.option('--msg', default='{"bar": "baz"}')
 @click.option('--batch', is_flag=True)
 @click.option('--max_len', default='100')
 def publish(
-    redis_url, port, redis_password, channel, random_channel, msg, batch, max_len
+    redis_url, port, password, user, channel, random_channel, msg, batch, max_len
 ):
     '''Publish (with XADD) to a channel
     '''
@@ -52,5 +55,5 @@ def publish(
         redis_url = f'redis://{host}:{port}'
 
     asyncio.get_event_loop().run_until_complete(
-        pub(redis_url, redis_password, channel, random_channel, msg, batch, max_len)
+        pub(redis_url, password, user, channel, random_channel, msg, batch, max_len)
     )

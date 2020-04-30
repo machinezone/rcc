@@ -12,12 +12,13 @@ from rcc.cluster.info import printRedisClusterInfoCoro
 
 @click.command()
 @click.option('--redis_urls', '-r', default='redis://localhost:11000')
-@click.option('--redis_password', '-a')
+@click.option('--password', '-a')
+@click.option('--user')
 @click.option('--role')
-def cluster_nodes(redis_urls, redis_password, role):
+def cluster_nodes(redis_urls, password, user, role):
     '''Monitor redis metrics'''
 
     try:
-        asyncio.run(printRedisClusterInfoCoro(redis_urls, redis_password, role))
+        asyncio.run(printRedisClusterInfoCoro(redis_urls, password, user, role))
     except Exception as e:
         logging.error(f'cluster_nodes error: {e}')

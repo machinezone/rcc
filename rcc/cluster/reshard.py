@@ -29,13 +29,20 @@ from rcc.cluster.info import getSlotsToNodesMapping, clusterCheck
 import click
 
 
-def makeClientfromNode(node, redisPassword):
+# FIXME: make redisUser mandatory
+def makeClientfromNode(node, redisPassword, redisUser):
     url = f'redis://{node.ip}:{node.port}'
-    return RedisClient(url, redisPassword)
+    return RedisClient(url, redisPassword, redisUser)
 
 
 async def migrateSlot(
-    masterClients, redisPassword, slot, sourceNode, destinationNode, dry=False
+    masterClients,
+    redisPassword,
+    redisUser,
+    slot,
+    sourceNode,
+    destinationNode,
+    dry=False,
 ):
     '''Migrate a slot to a node'''
     logging.info(
@@ -46,15 +53,17 @@ async def migrateSlot(
         src = f'redis://{sourceNode.ip}:{sourceNode.port}'
         dst = f'redis://{destinationNode.ip}:{destinationNode.port}'
 
-        passwordOption = ''
+        auth = ''
         if redisPassword:
-            passwordOption = f'--password {redisPassword}'
+            auth = f'--password {redisPassword}'
+            if redisUser:
+                auth += f' --user {redisUser}'
 
-        print(f'rcc migrate --src-addr {src} --dst-addr {dst} {slot} {passwordOption}')
+        print(f'rcc migrate {auth} --src-addr {src} --dst-addr {dst} {slot}')
         return True
 
-    sourceClient = makeClientfromNode(sourceNode, redisPassword)
-    destinationClient = makeClientfromNode(destinationNode, redisPassword)
+    sourceClient = makeClientfromNode(sourceNode, redisPassword, redisUser)
+    destinationClient = makeClientfromNode(destinationNode, redisPassword, redisUser)
 
     # 1. Set the destination node slot to importing state using CLUSTER SETSLOT
     #    <slot> IMPORTING <source-node-id>.
@@ -96,8 +105,13 @@ async def migrateSlot(
             args = ['MIGRATE', host, port, "", db, timeout]
 
             if redisPassword:
-                args.append('AUTH')
-                args.append(redisPassword)
+                if redisUser:
+                    args.append('AUTH2')
+                    args.append(redisUser)
+                    args.append(redisPassword)
+                else:
+                    args.append('AUTH')
+                    args.append(redisPassword)
 
             args.append("KEYS")
             for key in keys:
@@ -123,14 +137,16 @@ async def migrateSlot(
     return True
 
 
-async def waitForClusterViewToBeConsistent(redisUrls, redisPassword, timeout):
+async def waitForClusterViewToBeConsistent(
+    redisUrls, redisPassword, redisUser, timeout
+):
     logging.info('Waiting for cluster view to be consistent...')
     start = time.time()
 
     # give us 'timeout' seconds max for all nodes to agree
 
     while True:
-        ok = await clusterCheck(redisUrls, redisPassword)
+        ok = await clusterCheck(redisUrls, redisPassword, redisUser)
         if ok:
             break
 
@@ -152,14 +168,16 @@ async def runClusterCheck(port):
 
 
 async def binPackingReshardCoroutine(
-    redisUrls, redisPassword, weights, timeout, dry=False, nodeId=None
+    redisUrls, redisPassword, redisUser, weights, timeout, dry=False, nodeId=None
 ):
-    redisClient = RedisClient(redisUrls, redisPassword)
+    redisClient = RedisClient(redisUrls, redisPassword, redisUser)
     nodes = await redisClient.cluster_nodes()
 
     # There will be as many bins as there are master nodes
     masterNodes = [node for node in nodes if node.role == 'master']
-    masterClients = [makeClientfromNode(node, redisPassword) for node in masterNodes]
+    masterClients = [
+        makeClientfromNode(node, redisPassword, redisUser) for node in masterNodes
+    ]
     binCount = len(masterNodes)
 
     # Multiple keys could hash to the same hash-slot (collisions), so
@@ -184,7 +202,7 @@ async def binPackingReshardCoroutine(
         allSlots.append(binSlots)
 
     # We need to know where each slots lives
-    slotToNodes = await getSlotsToNodesMapping(redisUrls, redisPassword)
+    slotToNodes = await getSlotsToNodesMapping(redisUrls, redisPassword, redisUser)
 
     totalMigratedSlots = 0
 
@@ -208,14 +226,22 @@ async def binPackingReshardCoroutine(
             # Migrate each slot
             for slot in binSlots:
                 # recompute the slots to node mapping after each node migration
-                slotToNodes = await getSlotsToNodesMapping(redisUrls, redisPassword)
+                slotToNodes = await getSlotsToNodesMapping(
+                    redisUrls, redisPassword, redisUser
+                )
 
                 sourceNode = slotToNodes[slot]
                 if sourceNode.node_id == node.node_id:
                     logging.info(f'slot {slot} already placed correctly')
                 else:
                     ret = await migrateSlot(
-                        masterClients, redisPassword, slot, sourceNode, node, dry
+                        masterClients,
+                        redisPassword,
+                        redisUser,
+                        slot,
+                        sourceNode,
+                        node,
+                        dry,
                     )
                     if not ret:
                         return False
@@ -240,7 +266,7 @@ async def binPackingReshardCoroutine(
             # nodes at once # while this script does
             #
             consistent = await waitForClusterViewToBeConsistent(
-                redisUrls, redisPassword, timeout
+                redisUrls, redisPassword, redisUser, timeout
             )
             if not consistent:
                 return False
@@ -249,7 +275,9 @@ async def binPackingReshardCoroutine(
     return True
 
 
-def binPackingReshard(redisUrls, redisPassword, path, timeout, dry=False, nodeId=None):
+def binPackingReshard(
+    redisUrls, redisPassword, redisUser, path, timeout, dry=False, nodeId=None
+):
     if not os.path.exists(path):
         logging.error(f'{path} does not exists')
         return False
@@ -274,6 +302,6 @@ def binPackingReshard(redisUrls, redisPassword, path, timeout, dry=False, nodeId
 
     return asyncio.run(
         binPackingReshardCoroutine(
-            redisUrls, redisPassword, weights, timeout, dry, nodeId
+            redisUrls, redisPassword, redisUser, weights, timeout, dry, nodeId
         )
     )

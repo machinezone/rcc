@@ -15,8 +15,8 @@ import click
 from rcc.client import RedisClient
 
 
-async def interpreter(redis_url, redis_password, args):
-    client = RedisClient(redis_url, redis_password)
+async def interpreter(redisUrl, redisPassword, redisUser, args):
+    client = RedisClient(redisUrl, redisPassword, redisUser)
     await client.connect()
 
     quit = False
@@ -51,9 +51,10 @@ async def interpreter(redis_url, redis_password, args):
 @click.command()
 @click.option('--redis_url', default='redis://localhost')
 @click.option('--port', '-p')
-@click.option('--redis_password')
+@click.option('--password', '-a')
+@click.option('--user')
 @click.argument('args', nargs=-1, required=False)
-def cli(redis_url, port, redis_password, args):
+def cli(redis_url, port, password, user, args):
     '''cli tool similar to redis-cli'''
 
     if port is not None:
@@ -62,5 +63,5 @@ def cli(redis_url, port, redis_password, args):
         redis_url = f'redis://{host}:{port}'
 
     asyncio.get_event_loop().run_until_complete(
-        interpreter(redis_url, redis_password, args)
+        interpreter(redis_url, password, user, args)
     )

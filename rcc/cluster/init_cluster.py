@@ -16,7 +16,7 @@ from rcc.client import RedisClient
 
 
 def makeServerConfig(
-    root, readyPath, startPort=11000, masterNodeCount=3, password=None
+    root, readyPath, startPort=11000, masterNodeCount=3, password=None, user=None
 ):
     # create config files
     for i in range(masterNodeCount * 2):
@@ -29,7 +29,13 @@ def makeServerConfig(
             f.write(f'cluster-config-file nodes-{i}.conf' + '\n')
             f.write(f'dbfilename dump{i}.rdb' + '\n')
 
-            if password:
+            if user:
+                # Unclear whether I need a replica-user / I don't think so
+                f.write('user default off nopass ~* +@all' + '\n')
+                f.write(f'user {user} on >{password} ~* +@all' + '\n')
+                f.write(f'masteruser {user}' + '\n')
+                f.write(f'masterauth {password}' + '\n')
+            elif password:
                 f.write(f'requirepass {password}' + '\n')
                 f.write(f'masterauth {password}' + '\n')
 
@@ -72,7 +78,11 @@ def makeServerConfig(
 
         auth = ''
         if password:
-            auth += f'--auth={password}'
+            auth += f'-a {password}'
+            if user:
+                # Maybe redis-cluster-proxy should support a --user option instead
+                # of --auth-user to be consistent with redis-cli
+                auth += f' --auth-user {user}'
 
         f.write(f'redis-cluster-proxy {auth} --port {port+1} {ips}')
 
@@ -80,12 +90,13 @@ def makeServerConfig(
     host = 'localhost'
     port = startPort
 
-    # We could use the -a option too
-    env = ''
+    auth = ''
     if password:
-        env += f'env REDISCLI_AUTH={password} '
+        auth += f'-a {password}'
+        if user:
+            auth += f' --user {user}'
 
-    clusterInitCmd = f'echo yes | {env}redis-cli -h {host} -p {port} '
+    clusterInitCmd = f'echo yes | redis-cli {auth} -h {host} -p {port} '
     clusterInitCmd += f'--cluster create {ips} --cluster-replicas 1'
 
     return clusterInitCmd
@@ -136,7 +147,7 @@ async def checkOpenedPort(portRange, timeout: int):
 
 
 # FIXME: cobra could use this version
-async def waitForAllConnectionsToBeReady(urls, password, timeout: int):
+async def waitForAllConnectionsToBeReady(urls, password, user, timeout: int):
     start = time.time()
 
     for url in urls:
@@ -147,7 +158,7 @@ async def waitForAllConnectionsToBeReady(urls, password, timeout: int):
             sys.stderr.flush()
 
             try:
-                redis = RedisClient(url, password)
+                redis = RedisClient(url, password, user)
                 await redis.connect()
                 await redis.send('PING')
                 redis.close()
@@ -165,7 +176,7 @@ async def waitForAllConnectionsToBeReady(urls, password, timeout: int):
         sys.stderr.write('\n')
 
 
-async def runNewCluster(root, startPort, size, password):
+async def runNewCluster(root, startPort, size, password, user):
     size = int(size)
 
     # FIXME: port range does not deal with redis-cluster-proxy
@@ -173,7 +184,7 @@ async def runNewCluster(root, startPort, size, password):
     click.secho(f'1/6 Creating server config for range {portRange}', bold=True)
 
     readyPath = os.path.join(root, 'redis_cluster_ready')
-    initCmd = makeServerConfig(root, readyPath, startPort, size, password)
+    initCmd = makeServerConfig(root, readyPath, startPort, size, password, user)
 
     click.secho('2/6 Check that ports are opened', bold=True)
     await checkOpenedPort(portRange, timeout=10)
@@ -188,10 +199,11 @@ async def runNewCluster(root, startPort, size, password):
             f'redis://localhost:{port}'
             for port in range(startPort, startPort + 2 * size)
         ]
-        await waitForAllConnectionsToBeReady(urls, password, timeout=5)
+        await waitForAllConnectionsToBeReady(urls, password, user, timeout=5)
 
         # Initialize the cluster (master/slave assignments, etc...)
         click.secho(f'5/6 Initialize the cluster', bold=True)
+        print(initCmd)
         await initCluster(initCmd)
 
         # We just initialized the cluster, wait until it is 'consistent' and good to use
@@ -201,7 +213,7 @@ async def runNewCluster(root, startPort, size, password):
         while True:
             ret = False
             try:
-                ret = await clusterCheck(redisUrl, password)
+                ret = await clusterCheck(redisUrl, password, user)
             except Exception:
                 pass
 

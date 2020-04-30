@@ -22,14 +22,17 @@ async def coro():
     startPort = 12000
     redisUrl = f'redis://localhost:{startPort}'
     redisPassword = 'foobar'
+    redisUser = 'fooser'
     size = 3
-    task = asyncio.create_task(runNewCluster(root, startPort, size, redisPassword))
+    task = asyncio.create_task(
+        runNewCluster(root, startPort, size, redisPassword, redisUser)
+    )
 
     # Wait until cluster is initialized
     while not os.path.exists(clusterReadyFile):
         await asyncio.sleep(0.1)
 
-    client = makeClient(startPort, redisPassword)
+    client = makeClient(startPort, redisPassword, redisUser)
 
     i = 2
     channel = 'channel_2'
@@ -49,7 +52,7 @@ async def coro():
     assert val == value
 
     signature, balanced, fullCoverage = await getClusterSignature(
-        redisUrl, redisPassword
+        redisUrl, redisPassword, redisUser
     )
     assert balanced
     assert fullCoverage
@@ -59,27 +62,35 @@ async def coro():
     slot = 1978
     nodes = await client.cluster_nodes()
     masterNodes = [node for node in nodes if node.role == 'master']
-    masterClients = [makeClientfromNode(node, redisPassword) for node in masterNodes]
+    masterClients = [
+        makeClientfromNode(node, redisPassword, redisUser) for node in masterNodes
+    ]
     sourceNode = masterNodes[0]
     destinationNode = masterNodes[1]
     await migrateSlot(
-        masterClients, redisPassword, slot, sourceNode, destinationNode, dry=False
+        masterClients,
+        redisPassword,
+        redisUser,
+        slot,
+        sourceNode,
+        destinationNode,
+        dry=False,
     )
 
     consistent = await waitForClusterViewToBeConsistent(
-        redisUrl, redisPassword, timeout=5
+        redisUrl, redisPassword, redisUser, timeout=5
     )
     assert consistent
 
     newSignature, balanced, fullCoverage = await getClusterSignature(
-        redisUrl, redisPassword
+        redisUrl, redisPassword, redisUser
     )
     assert signature != newSignature
     assert balanced
     assert fullCoverage
 
     # Now run cluster check
-    await runRedisCliClusterCheck(startPort, redisPassword)
+    await runRedisCliClusterCheck(startPort, redisPassword, redisUser)
 
     # Validate that we can read back what we wrote, after resharding
     # breakpoint()

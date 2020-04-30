@@ -38,14 +38,15 @@ async def subscriber(
 
 @click.command()
 @click.option('--redis_url', default='redis://localhost')
-@click.option('--redis_password')
+@click.option('--password', '-a')
+@click.option('--user')
 @click.option('--channel', default='foo')
 @click.option('--pattern')
 @click.option('--timeout', default=360)
-def sub(redis_url, redis_password, channel, pattern, timeout):
+def sub(redis_url, password, user, channel, pattern, timeout):
     '''Subscribe (with PUBSUB) to a channel'''
 
-    redisClient = RedisClient(redis_url, redis_password)
+    redisClient = RedisClient(redis_url, password, user)
 
     asyncio.get_event_loop().run_until_complete(
         subscriber(redisClient, channel, pattern, timeout)

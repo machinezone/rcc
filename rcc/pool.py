@@ -7,8 +7,9 @@ class ConnectionPool(object):
     '''Not asyncio 'thread' safe (yet)
     '''
 
-    def __init__(self, password=None, multiplexing=False):
+    def __init__(self, password=None, user=None, multiplexing=False):
         self.password = password or ''
+        self.user = user or ''
         self.connections = {}
         self.multiplexing = multiplexing
 
@@ -17,7 +18,7 @@ class ConnectionPool(object):
 
     def get(self, url: str):
         if url not in self.connections:
-            connection = Connection(url, self.password, self.multiplexing)
+            connection = Connection(url, self.password, self.user, self.multiplexing)
             self.connections[url] = connection
 
         return self.connections[url]

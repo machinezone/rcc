@@ -18,7 +18,7 @@ from rcc.response import convertResponse
 
 
 class Connection(object):
-    def __init__(self, url, password, multiplexing=False):
+    def __init__(self, url, password, user=None, multiplexing=False):
         netloc = urlparse(url).netloc
         host, _, port = netloc.partition(':')
         if port:
@@ -29,6 +29,7 @@ class Connection(object):
         self.host = host
 
         self.password = password
+        self.user = user
 
         self._reader = hiredis.Reader()
 
@@ -59,7 +60,12 @@ class Connection(object):
 
         if self.password:
             assert not self.multiplexing  # not sure how this is going to work
-            await self.send('AUTH', self.password)
+
+            if self.user:
+                await self.send('AUTH', self.user, self.password)  # redis-6 ACL
+            else:
+                await self.send('AUTH', self.password)  # Legacy
+
             response = await self.readResponse()
             if response != b'OK':
                 raise ValueError(f'Error Authenticating {response}')

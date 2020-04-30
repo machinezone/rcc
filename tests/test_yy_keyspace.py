@@ -16,11 +16,14 @@ async def coro(monitor):
     '''
     redisUrl = 'redis://localhost:6379'
     redisPassword = ''
-    redisClient = RedisClient(redisUrl, redisPassword)
+    redisUser = ''
+    redisClient = RedisClient(redisUrl, redisPassword, redisUser)
 
     # now analyze keyspace, wait for 2 seconds
     task = asyncio.create_task(
-        analyzeKeyspace(redisUrl, redisPassword, 2, count=-1, monitor=monitor)
+        analyzeKeyspace(
+            redisUrl, redisPassword, redisUser, 2, count=-1, monitor=monitor
+        )
     )
 
     # wait a tiny bit so that the analyzer is ready

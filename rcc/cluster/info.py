@@ -11,8 +11,8 @@ import logging
 from rcc.client import RedisClient
 
 
-async def getSlotsToNodesMapping(redisUrl, redisPassword):
-    redisClient = RedisClient(redisUrl, redisPassword)
+async def getSlotsToNodesMapping(redisUrl, redisPassword, redisUser):
+    redisClient = RedisClient(redisUrl, redisPassword, redisUser)
     nodes = await redisClient.cluster_nodes()
 
     masterNodes = [node for node in nodes if node.role == 'master']
@@ -68,8 +68,8 @@ def getSlotsRange(slots):
     return ' '.join(res)
 
 
-async def printRedisClusterInfoCoro(redisUrl, redisPassword, role=None):
-    redisClient = RedisClient(redisUrl, redisPassword)
+async def printRedisClusterInfoCoro(redisUrl, redisPassword, redisUser, role=None):
+    redisClient = RedisClient(redisUrl, redisPassword, redisUser)
     nodes = await redisClient.cluster_nodes()
 
     for node in nodes:
@@ -80,8 +80,8 @@ async def printRedisClusterInfoCoro(redisUrl, redisPassword, role=None):
         print(node.node_id, node.ip + ':' + node.port, node.role, slotRange)
 
 
-async def getClusterSignature(redisUrl, redisPassword):
-    redisClient = RedisClient(redisUrl, redisPassword)
+async def getClusterSignature(redisUrl, redisPassword, redisUser):
+    redisClient = RedisClient(redisUrl, redisPassword, redisUser)
     nodes = await redisClient.cluster_nodes()
 
     roles = collections.defaultdict(int)
@@ -104,8 +104,8 @@ async def getClusterSignature(redisUrl, redisPassword):
     return signature, balanced, fullCoverage
 
 
-async def getClusterUrls(redisUrl, redisPassword):
-    redisClient = RedisClient(redisUrl, redisPassword)
+async def getClusterUrls(redisUrl, redisPassword, redisUser):
+    redisClient = RedisClient(redisUrl, redisPassword, redisUser)
     nodes = await redisClient.cluster_nodes()
 
     urls = []
@@ -116,13 +116,13 @@ async def getClusterUrls(redisUrl, redisPassword):
     return urls
 
 
-async def clusterCheck(redisUrl, redisPassword):
+async def clusterCheck(redisUrl, redisPassword, redisUser):
     '''
     Get all the nodes in the cluster
     Then ask each nodes its view of the cluster (mostly allocated slots)
     Compare each view and make sure they are consistent
     '''
-    urls = await getClusterUrls(redisUrl, redisPassword)
+    urls = await getClusterUrls(redisUrl, redisPassword, redisUser)
 
     signatures = set()
 
@@ -131,7 +131,7 @@ async def clusterCheck(redisUrl, redisPassword):
 
     for url in urls:
         signature, balanced, fullCoverage = await getClusterSignature(
-            url, redisPassword
+            url, redisPassword, redisUser
         )
         signatures.add(signature)
 
@@ -148,13 +148,14 @@ async def clusterCheck(redisUrl, redisPassword):
     return len(signatures) == 1 and allBalanced and allCovered
 
 
-async def runRedisCliClusterCheck(port, redisPassword):
-    # We could use the -a option too
-    env = ''
+async def runRedisCliClusterCheck(port, redisPassword, redisUser):
+    auth = ''
     if redisPassword:
-        env += f'env REDISCLI_AUTH={redisPassword} '
+        auth += f'-a {redisPassword}'
+        if redisUser:
+            auth += f' --user {redisUser}'
 
-    cmd = f'{env} redis-cli --cluster check localhost:{port}'
+    cmd = f'redis-cli {auth} --cluster check localhost:{port}'
 
     proc = await asyncio.create_subprocess_shell(cmd)
     stdout, stderr = await proc.communicate()

@@ -21,14 +21,17 @@ from rcc.response import convertResponse
 
 
 class RedisClient(ClusterCommandsMixin, PubSubCommandsMixin, GenericCommandsMixin):
-    def __init__(self, url: str, password, multiplexing=False):
+    def __init__(self, url: str, password: str, user: str = None, multiplexing=False):
         self.url = url
+
+        # FIXME: do we need those member variables ?
         self.password = password
+        self.user = user
 
         self.multiplexing = multiplexing
 
         self.urls = {}
-        self.pool = ConnectionPool(password, self.multiplexing)
+        self.pool = ConnectionPool(password, user, self.multiplexing)
         self.connection = self.pool.get(self.url)
         self.cluster = False
         self.lock = asyncio.Lock()

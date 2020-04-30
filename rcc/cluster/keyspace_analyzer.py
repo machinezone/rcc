@@ -39,6 +39,7 @@ class KeySpace(object):
 async def analyzeKeyspace(
     redisUrlsStr: str,
     redisPassword: str,
+    redisUser: str,
     timeout: int,
     count: int = -1,
     monitor: bool = False,
@@ -48,7 +49,7 @@ async def analyzeKeyspace(
     redisUrls = redisUrlsStr.split(';')
     redisUrl = redisUrls[0]
 
-    redisClient = RedisClient(redisUrl, redisPassword)
+    redisClient = RedisClient(redisUrl, redisPassword, redisUser)
     await redisClient.connect()
 
     clients = []
@@ -56,10 +57,10 @@ async def analyzeKeyspace(
         nodes = await redisClient.cluster_nodes()
         masterNodes = [node for node in nodes if node.role == 'master']
         for node in masterNodes:
-            client = makeClientfromNode(node, redisPassword)
+            client = makeClientfromNode(node, redisPassword, redisUser)
             clients.append(client)
     else:
-        clients = [RedisClient(url, redisPassword) for url in redisUrls]
+        clients = [RedisClient(url, redisPassword, redisUser) for url in redisUrls]
 
     #
     # E for Keyevent events, published with __keyevent@<db>__ prefix.
@@ -152,22 +153,22 @@ async def analyzeKeyspace(
                 )
             tasks.append(task)
 
-            if count > 0:
-                label = f'Capturing {count} events'
-                with click.progressbar(length=count, label=label) as bar:
+        if count > 0:
+            label = f'Capturing {count} events'
+            with click.progressbar(length=count, label=label) as bar:
 
-                    progress = 0
-                    while keySpace.notifications < count:
-                        await asyncio.sleep(0.1)
-                        bar.update(keySpace.notifications - progress)
-                        progress = keySpace.notifications
-            else:
-                label = f'Capturing events during {timeout} seconds'
-                with click.progressbar(length=timeout, label=label) as bar:
-                    # Monitor during X seconds
-                    for i in range(timeout):
-                        await asyncio.sleep(1)
-                        bar.update(1)
+                progress = 0
+                while keySpace.notifications < count:
+                    await asyncio.sleep(0.1)
+                    bar.update(keySpace.notifications - progress)
+                    progress = keySpace.notifications
+        else:
+            label = f'Capturing events during {timeout} seconds'
+            with click.progressbar(length=timeout, label=label) as bar:
+                # Monitor during X seconds
+                for i in range(timeout):
+                    await asyncio.sleep(1)
+                    bar.update(1)
 
         for task in tasks:
             # Cancel the tasks

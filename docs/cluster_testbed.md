@@ -17,6 +17,7 @@ Options:
   --size INTEGER
   --start_port INTEGER
   -a, --password TEXT
+  --user TEXT
   --help                Show this message and exit.
 ```
 
@@ -43,6 +44,8 @@ $ cat server0.conf
 cluster-config-file nodes-0.conf
 dbfilename dump0.rdb
 ```
+
+Redis-6 ACL are supported, you can remove the default user and require to authenticate with a newly created user. Use --user for that. Normal password protection can be done by just specifying the --password option.
 
 Once the command has terminated (takes about 10 seconds on my mac), you can run redis-cli to test it.
 
