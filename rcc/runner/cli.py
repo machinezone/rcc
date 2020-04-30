@@ -9,6 +9,7 @@ redis-cli -p 10000 CLUSTER SETSLOT 12182 IMPORTING 7f54416a684564483e83cdfef975d
 '''
 
 import asyncio
+import logging
 from urllib.parse import urlparse
 
 import click
@@ -62,6 +63,9 @@ def cli(redis_url, port, password, user, args):
         host, _, _ = netloc.partition(':')
         redis_url = f'redis://{host}:{port}'
 
-    asyncio.get_event_loop().run_until_complete(
-        interpreter(redis_url, password, user, args)
-    )
+    try:
+        asyncio.get_event_loop().run_until_complete(
+            interpreter(redis_url, password, user, args)
+        )
+    except Exception as e:
+        logging.error(f'cli error: {e}')
