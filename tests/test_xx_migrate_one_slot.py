@@ -24,7 +24,7 @@ async def coro():
     redisPassword = 'foobar'
     redisUser = 'fooser'
     size = 3
-    task = asyncio.create_task(
+    task = asyncio.ensure_future(
         runNewCluster(root, startPort, size, redisPassword, redisUser)
     )
 
@@ -107,4 +107,4 @@ async def coro():
 
 
 def test_migrate_one_slot():
-    asyncio.run(coro())
+    asyncio.get_event_loop().run_until_complete(coro())

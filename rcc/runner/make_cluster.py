@@ -23,6 +23,8 @@ def make_cluster(size, start_port, password, user):
     root = tempfile.mkdtemp()
 
     try:
-        asyncio.run(runNewCluster(root, start_port, size, password, user))
+        asyncio.get_event_loop().run_until_complete(
+            runNewCluster(root, start_port, size, password, user)
+        )
     except Exception as e:
         logging.error(f'cluster_nodes error: {e}')

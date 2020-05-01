@@ -191,7 +191,7 @@ async def runNewCluster(root, startPort, size, password, user):
 
     try:
         click.secho(f'3/6 Configuring and running', bold=True)
-        task = asyncio.create_task(runServer(root, startPort))
+        task = asyncio.ensure_future(runServer(root, startPort))
 
         # Check that all connections are ready
         click.secho(f'4/6 Wait for the cluster nodes to be running', bold=True)

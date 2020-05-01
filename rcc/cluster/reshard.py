@@ -300,7 +300,7 @@ def binPackingReshard(
             )
             return False
 
-    return asyncio.run(
+    return asyncio.get_event_loop().run_until_complete(
         binPackingReshardCoroutine(
             redisUrls, redisPassword, redisUser, weights, timeout, dry, nodeId
         )

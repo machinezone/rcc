@@ -146,9 +146,9 @@ async def analyzeKeyspace(
     try:
         for client in clients:
             if monitor:
-                task = asyncio.create_task(client.monitor(monitorCallback, keySpace))
+                task = asyncio.ensure_future(client.monitor(monitorCallback, keySpace))
             else:
-                task = asyncio.create_task(
+                task = asyncio.ensure_future(
                     client.psubscribe(pattern, pubSubCallback, keySpace)
                 )
             tasks.append(task)

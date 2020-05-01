@@ -62,4 +62,6 @@ async def printRedisClusterInfoCoro(
 def cluster_info(redis_url, password, user, stats, role):
     '''Monitor redis metrics from the INFO command'''
 
-    asyncio.run(printRedisClusterInfoCoro(redis_url, password, user, stats, role))
+    asyncio.get_event_loop().run_until_complete(
+        printRedisClusterInfoCoro(redis_url, password, user, stats, role)
+    )

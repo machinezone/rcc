@@ -20,7 +20,7 @@ async def coro(monitor):
     redisClient = RedisClient(redisUrl, redisPassword, redisUser)
 
     # now analyze keyspace, wait for 2 seconds
-    task = asyncio.create_task(
+    task = asyncio.ensure_future(
         analyzeKeyspace(
             redisUrl, redisPassword, redisUser, 2, count=-1, monitor=monitor
         )
@@ -60,8 +60,8 @@ async def coro(monitor):
 
 
 def test_analyze_keyspace_with_notifications():
-    asyncio.run(coro(monitor=False))
+    asyncio.get_event_loop().run_until_complete(coro(monitor=False))
 
 
 def test_analyze_keyspace_with_monitor():
-    asyncio.run(coro(monitor=True))
+    asyncio.get_event_loop().run_until_complete(coro(monitor=True))

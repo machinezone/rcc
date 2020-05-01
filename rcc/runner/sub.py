@@ -17,9 +17,9 @@ async def subscriber(
 
     obj = []
     if pattern:
-        task = asyncio.create_task(redisClient.psubscribe(pattern, cb, obj))
+        task = asyncio.ensure_future(redisClient.psubscribe(pattern, cb, obj))
     else:
-        task = asyncio.create_task(redisClient.subscribe(channel, cb, obj))
+        task = asyncio.ensure_future(redisClient.subscribe(channel, cb, obj))
 
     await asyncio.sleep(timeout)
 

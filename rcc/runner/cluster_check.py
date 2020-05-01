@@ -31,4 +31,4 @@ def cluster_check(redis_url, password, user):
     '''Make sure all nodes have the same view of the cluster
     '''
 
-    asyncio.run(checkCluster(redis_url, password, user))
+    asyncio.get_event_loop().run_until_complete(checkCluster(redis_url, password, user))

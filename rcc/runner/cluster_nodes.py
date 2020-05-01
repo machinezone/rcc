@@ -19,6 +19,8 @@ def cluster_nodes(redis_urls, password, user, role):
     '''Monitor redis metrics'''
 
     try:
-        asyncio.run(printRedisClusterInfoCoro(redis_urls, password, user, role))
+        asyncio.get_event_loop().run_until_complete(
+            printRedisClusterInfoCoro(redis_urls, password, user, role)
+        )
     except Exception as e:
         logging.error(f'cluster_nodes error: {e}')

@@ -30,7 +30,7 @@ from rcc.plot import asciiPlot
 def keyspace(redis_urls, port, password, user, timeout, path, count, monitor, max_keys):
     '''Analyze the keyspace'''
 
-    keySpace = asyncio.run(
+    keySpace = asyncio.get_event_loop().run_until_complete(
         analyzeKeyspace(
             redis_urls, password, user, timeout, count=count, monitor=monitor
         )

@@ -16,7 +16,7 @@ async def sharedClient():
     client = makeClient(port=port)
     port = client.port
 
-    redisServerTask = asyncio.create_task(runRedisServer(port))
+    redisServerTask = asyncio.ensure_future(runRedisServer(port))
     await asyncio.sleep(0.1)  # wait a bit until the server is running
 
     await client.send('DEL', 'a')
@@ -33,11 +33,11 @@ async def sharedClient():
 
     start = time.time()
 
-    taskA = asyncio.create_task(incrementer(client, 1000))
-    taskB = asyncio.create_task(incrementer(client, 1000))
-    taskC = asyncio.create_task(incrementer(client, 1000))
-    taskD = asyncio.create_task(incrementer(client, 1000))
-    taskE = asyncio.create_task(incrementer(client, 1000))
+    taskA = asyncio.ensure_future(incrementer(client, 1000))
+    taskB = asyncio.ensure_future(incrementer(client, 1000))
+    taskC = asyncio.ensure_future(incrementer(client, 1000))
+    taskD = asyncio.ensure_future(incrementer(client, 1000))
+    taskE = asyncio.ensure_future(incrementer(client, 1000))
 
     await taskA
     await taskB

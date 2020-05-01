@@ -72,7 +72,7 @@ class Connection(object):
 
         if self.multiplexing:
             self.pubSubEvent = asyncio.Event()
-            self.task = asyncio.create_task(self.readResponseTask())
+            self.task = asyncio.ensure_future(self.readResponseTask())
 
     def close(self, error=None):
         try:

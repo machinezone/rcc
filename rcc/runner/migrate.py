@@ -45,4 +45,6 @@ async def runMigration(src_addr, dst_addr, redisPassword, redisUser, slot, dry):
 def migrate(src_addr, dst_addr, password, user, slot, dry):
     '''Migrate one slot from a node to another one'''
 
-    asyncio.run(runMigration(src_addr, dst_addr, password, user, slot, dry))
+    asyncio.get_event_loop().run_until_complete(
+        runMigration(src_addr, dst_addr, password, user, slot, dry)
+    )

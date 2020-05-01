@@ -22,7 +22,7 @@ def client():
 async def ping(client):
     port = client.port
 
-    redisServerTask = asyncio.create_task(runRedisServer(port))
+    redisServerTask = asyncio.ensure_future(runRedisServer(port))
     await asyncio.sleep(0.1)  # wait a bit until the server is running
 
     pong = await client.send('PING')

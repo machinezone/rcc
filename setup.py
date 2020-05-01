@@ -9,8 +9,8 @@ import sys
 
 from setuptools import find_packages, setup
 
-if sys.version_info[:2] < (3, 7):
-    print("Error: Rcc requires Python 3.7")
+if sys.version_info[:2] < (3, 6):
+    print("Error: Rcc requires Python 3.6")
     sys.exit(1)
 
 ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__)))
@@ -51,6 +51,7 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
     ],

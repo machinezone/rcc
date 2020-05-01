@@ -44,7 +44,7 @@ async def coro():
     size = 3
     redisPassword = ''
     redisUser = ''
-    task = asyncio.create_task(
+    task = asyncio.ensure_future(
         runNewCluster(root, startPort, size, redisPassword, redisUser)
     )
 
@@ -56,7 +56,7 @@ async def coro():
     await checkStrings(client)
 
     # now analyze keyspace for 3 seconds
-    task = asyncio.create_task(analyzeKeyspace(redisUrl, redisPassword, redisUser, 3))
+    task = asyncio.ensure_future(analyzeKeyspace(redisUrl, redisPassword, redisUser, 3))
 
     # wait a tiny bit so that the analyzer is ready
     # (it needs to make a couple of pubsub subscriptions)
@@ -126,4 +126,4 @@ async def coro():
 
 
 def test_reshard():
-    asyncio.run(coro())
+    asyncio.get_event_loop().run_until_complete(coro())
