@@ -19,7 +19,7 @@ from rcc.plot import asciiPlot
 
 @click.command()
 @click.option(
-    '--redis_url', '-r', envvar='RCC_REDIS_URL', default='redis://localhost:11000'
+    '--redis_urls', '-r', envvar='RCC_REDIS_URL', default='redis://localhost:11000'
 )
 @click.option('--password', '-a')
 @click.option('--user')
