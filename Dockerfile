@@ -14,6 +14,7 @@ RUN pip install --cache-dir=/opt/pip_cache --user --requirement /tmp/requirement
 FROM python:3.8.2-alpine3.11 as runtime
 RUN addgroup -S app && adduser -S -G app app
 RUN apk add --no-cache libstdc++ curl ca-certificates zsh ws
+RUN apk add --no-cache redis
 
 COPY --chown=app:app --from=build /opt/pip_cache /opt/pip_cache
 

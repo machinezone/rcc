@@ -8,11 +8,16 @@ import os
 import sys
 import time
 import logging
+import distutils.spawn
 
 import click
 
 from rcc.cluster.info import clusterCheck
 from rcc.client import RedisClient
+
+
+def hasExecutable(program):
+    return distutils.spawn.find_executable(program)
 
 
 def makeServerConfig(
@@ -60,31 +65,37 @@ def makeServerConfig(
             f.write(f'server{i}: redis-server server{i}.conf ')
             f.write(f'--protected-mode no --cluster-enabled yes --port {port}\n')
 
-        #
-        # Use a simple shell expression to only start the proxy when the server is ready
-        # $ while test ! -f /tmp/bar ; do sleep 1 ; echo waiting ; done ; echo READY
-        # waiting
-        # waiting
-        # READY
-        #
-        # The 'ready file' will be created when the cluster is ready.
-        #
-        msg = 'waiting for cluster to be up to start proxy'
-        filename = os.path.basename(readyPath)
-        f.write('proxy: ')
-        f.write(
-            f'while test ! -f $ROOT/{filename} ; do sleep 3 ; echo "{msg}" ; done ; '
-        )
+        if not hasExecutable('redis-cluster-proxy'):
+            logging.warning('****************************************')
+            logging.warning('* redis-cluster-proxy is not available *')
+            logging.warning('****************************************')
+        else:
+            #
+            # Use a simple shell expression to only start the proxy
+            # when the server is ready
+            # $ while test ! -f /tmp/bar ; do sleep 1 ; echo waiting ; done ; echo READY
+            # waiting
+            # waiting
+            # READY
+            #
+            # The 'ready file' will be created when the cluster is ready.
+            #
+            msg = 'waiting for cluster to be up to start proxy'
+            filename = os.path.basename(readyPath)
+            f.write('proxy: ')
+            f.write(
+                f'while test ! -f $ROOT/{filename}; do sleep 3; echo "{msg}"; done; '
+            )
 
-        auth = ''
-        if password:
-            auth += f'-a {password}'
-            if user:
-                # Maybe redis-cluster-proxy should support a --user option instead
-                # of --auth-user to be consistent with redis-cli
-                auth += f' --auth-user {user}'
+            auth = ''
+            if password:
+                auth += f'-a {password}'
+                if user:
+                    # Maybe redis-cluster-proxy should support a --user option instead
+                    # of --auth-user to be consistent with redis-cli
+                    auth += f' --auth-user {user}'
 
-        f.write(f'redis-cluster-proxy {auth} --port {port+1} {ips}')
+            f.write(f'redis-cluster-proxy {auth} --port {port+1} {ips}')
 
     # Print cluster init command
     host = 'localhost'
