@@ -1,8 +1,9 @@
-'''Repeatitly print cluster info
+'''Monitor redis metrics from the INFO command
 
 Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 import asyncio
+import logging
 
 import click
 import tabulate
@@ -78,9 +79,13 @@ async def printRedisClusterInfoCoro(
 @click.option('--user')
 @click.option('--stats', '-s', default=DEFAULT_STATS, multiple=True)
 @click.option('--role')
-def cluster_info(redis_url, password, user, stats, role):
+def top(redis_url, password, user, stats, role):
     '''Monitor redis metrics from the INFO command'''
 
-    asyncio.get_event_loop().run_until_complete(
-        printRedisClusterInfoCoro(redis_url, password, user, stats, role)
-    )
+    while True:
+        try:
+            asyncio.get_event_loop().run_until_complete(
+                printRedisClusterInfoCoro(redis_url, password, user, stats, role)
+            )
+        except Exception as e:
+            logging.error(f'cli error: {e}')
