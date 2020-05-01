@@ -9,6 +9,17 @@ import tabulate
 
 from rcc.client import RedisClient
 
+DEFAULT_STATS = [
+    'redis_version AS vers',
+    'connected_clients AS clients',
+    'used_memory_rss_human AS rss',
+    'used_cpu_sys AS cpu(s)',
+    'used_cpu_user AS cpu(u)',
+    'instantaneous_input_kbps AS recv',
+    'instantaneous_output_kbps AS sent',
+    'instantaneous_ops_per_sec AS ops',
+]
+
 
 async def printRedisClusterInfoCoro(
     redisUrl, redisPassword, redisUser, stats, role=None
@@ -26,14 +37,22 @@ async def printRedisClusterInfoCoro(
         clients.append((node, client))
 
     while True:
-        rows = [['node', 'role', *stats]]
+        rows = [['node', 'role']]
+        for stat in stats:
+            statAlias = stat
+            if ' AS ' in stat:
+                statAlias = stat.split()[-1]
+
+            rows[0].append(statAlias)
 
         for node, client in clients:
             info = await client.send('INFO')
 
             row = [node.ip + ':' + node.port, node.role]
             for stat in stats:
-                row.append(info[stat])
+                statName = stat.split()[0]
+                statValue = info[statName]
+                row.append(statValue)
 
             rows.append(row)
 
@@ -57,7 +76,7 @@ async def printRedisClusterInfoCoro(
 @click.option('--redis_url', '-r', default='redis://localhost:11000')
 @click.option('--password', '-a')
 @click.option('--user')
-@click.option('--stats', '-s', default=['redis_version'], multiple=True)
+@click.option('--stats', '-s', default=DEFAULT_STATS, multiple=True)
 @click.option('--role')
 def cluster_info(redis_url, password, user, stats, role):
     '''Monitor redis metrics from the INFO command'''
