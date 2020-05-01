@@ -50,7 +50,7 @@ async def interpreter(redisUrl, redisPassword, redisUser, args):
 
 
 @click.command()
-@click.option('--redis_url', default='redis://localhost')
+@click.option('--redis_url', '-r', envvar='RCC_REDIS_URL', default='redis://localhost')
 @click.option('--port', '-p')
 @click.option('--password', '-a')
 @click.option('--user')

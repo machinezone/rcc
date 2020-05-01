@@ -24,7 +24,9 @@ async def checkCluster(redisUrl, redisPassword, redisUser):
 
 
 @click.command()
-@click.option('--redis_url', '-r', default='redis://localhost:11000')
+@click.option(
+    '--redis_url', '-r', envvar='RCC_REDIS_URL', default='redis://localhost:11000'
+)
 @click.option('--password', '-a')
 @click.option('--user')
 def cluster_check(redis_url, password, user):

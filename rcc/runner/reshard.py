@@ -12,7 +12,9 @@ DEFAULT_WEIGHTS_PATH = 'weights.csv'
 
 
 @click.command()
-@click.option('--redis_url', '-r', default='redis://localhost:11000')
+@click.option(
+    '--redis_url', '-r', envvar='RCC_REDIS_URL', default='redis://localhost:11000'
+)
 @click.option('--password', '-a')
 @click.option('--user')
 @click.option('--port', default=6379)
