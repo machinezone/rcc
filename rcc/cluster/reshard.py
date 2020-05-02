@@ -202,7 +202,7 @@ async def binPackingReshardCoroutine(
         allSlots.append(binSlots)
 
     # We need to know where each slots lives
-    slotToNodes = await getSlotsToNodesMapping(redisUrls, redisPassword, redisUser)
+    slotToNodes = await getSlotsToNodesMapping(redisClient)
 
     totalMigratedSlots = 0
 

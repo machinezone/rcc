@@ -11,8 +11,7 @@ import logging
 from rcc.client import RedisClient
 
 
-async def getSlotsToNodesMapping(redisUrl, redisPassword, redisUser):
-    redisClient = RedisClient(redisUrl, redisPassword, redisUser)
+async def getSlotsToNodesMapping(redisClient):
     nodes = await redisClient.cluster_nodes()
 
     masterNodes = [node for node in nodes if node.role == 'master']
