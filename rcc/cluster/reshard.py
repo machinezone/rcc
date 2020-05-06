@@ -226,9 +226,7 @@ async def binPackingReshardCoroutine(
             # Migrate each slot
             for slot in binSlots:
                 # recompute the slots to node mapping after each node migration
-                slotToNodes = await getSlotsToNodesMapping(
-                    redisUrls, redisPassword, redisUser
-                )
+                slotToNodes = await getSlotsToNodesMapping(redisClient)
 
                 sourceNode = slotToNodes[slot]
                 if sourceNode.node_id == node.node_id:
