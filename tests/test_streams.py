@@ -6,7 +6,8 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 import asyncio
 import uuid
 import pytest
-from test_utils import makeClient
+import logging
+from test_utils import makeClient, isCommandSupported
 
 
 @pytest.fixture()
@@ -43,6 +44,11 @@ async def add_and_read(client):
     await client.connect()
 
     channel = str(uuid.uuid4())
+
+    hasXadd = await isCommandSupported(client, 'XADD')
+    if not hasXadd:
+        logging.warning('Redis server does not support streams')
+        return
 
     for val in ['barbababababab', '{"bar": "baz"}']:
         maxLen = b'100'

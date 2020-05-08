@@ -4,8 +4,7 @@ on: [push]
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -13,16 +12,18 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.8
-        #    - name: Install redis
-        #      run: |
-        #        sudo apt install build-essential
-        #        sudo apt-get install redis-server
-        #        curl -O http://download.redis.io/redis-stable.tar.gz
-        #        tar xzvf redis-stable.tar.gz
-        #        cd redis-stable
-        #        make
-        #        sudo make install
-        #        sudo systemctl restart redis
+    - name: Install redis
+      run: |
+        brew install redis
+        brew services start redis
+        # sudo apt-get install redis-server
+        # sudo apt install build-essential
+        # curl -O http://download.redis.io/redis-stable.tar.gz
+        # tar xzvf redis-stable.tar.gz
+        # cd redis-stable
+        # make
+        # sudo make install
+        # sudo systemctl restart redis
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -34,9 +35,9 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. We want to use the black formatter
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
-        #    - name: Test with pytest
-        #      run: |
-        #        pip install --requirement tests/requirements.txt
-        #        pip install -e .
-        #        pip install "file://`pwd`#egg=rcc[dev]"
-        #        py.test -v --disable-warnings tests/*.py
+    - name: Test with pytest
+      run: |
+        pip install --requirement tests/requirements.txt
+        pip install -e .
+        pip install "file://`pwd`#egg=rcc[dev]"
+        py.test -v --disable-warnings tests/*.py

@@ -11,6 +11,8 @@ dev: update_version
 	pip install -U pip
 	pip install --requirement requirements.txt
 	pip install --requirement tests/requirements.txt
+	pip install pre-commit
+	pre-commit install
 	pip install -e .
 	pip install "file://`pwd`#egg=rcc[dev]"
 

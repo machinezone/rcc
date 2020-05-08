@@ -107,7 +107,11 @@ def makeServerConfig(
         if user:
             auth += f' --user {user}'
 
-    clusterInitCmd = f'echo yes | redis-cli {auth} -h {host} -p {port} '
+    # FIXME test hack when using redis-4
+    # redisCli = '/usr/local/Cellar/redis/5.0.8/bin/redis-cli'
+
+    redisCli = 'redis-cli'
+    clusterInitCmd = f'echo yes | {redisCli} {auth} -h {host} -p {port} '
     clusterInitCmd += f'--cluster create {ips} --cluster-replicas 1'
 
     return clusterInitCmd

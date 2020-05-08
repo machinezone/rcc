@@ -1,9 +1,10 @@
-'''Migrate slots from one node to another
+'''Migrate one slot from a node to another one
 
 Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import asyncio
+import logging
 
 import click
 
@@ -45,6 +46,9 @@ async def runMigration(src_addr, dst_addr, redisPassword, redisUser, slot, dry):
 def migrate(src_addr, dst_addr, password, user, slot, dry):
     '''Migrate one slot from a node to another one'''
 
-    asyncio.get_event_loop().run_until_complete(
-        runMigration(src_addr, dst_addr, password, user, slot, dry)
-    )
+    try:
+        asyncio.get_event_loop().run_until_complete(
+            runMigration(src_addr, dst_addr, password, user, slot, dry)
+        )
+    except Exception as e:
+        logging.error(f'migrate error: {e}')

@@ -1,5 +1,5 @@
 '''Test resharding and capturing keyspace information.
-Needs to be run last hence the weid name with zzz
+Needs to be run last hence the weird name with zzz
 
 Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
@@ -13,7 +13,7 @@ from rcc.cluster.reshard import makeClientfromNode, waitForClusterViewToBeConsis
 from rcc.cluster.info import getClusterSignature, runRedisCliClusterCheck
 from rcc.cluster.reshard import migrateSlot
 
-from test_utils import makeClient
+from test_utils import makeClient, getRedisServerMajorVersion
 
 
 async def coro():
@@ -21,8 +21,14 @@ async def coro():
     clusterReadyFile = os.path.join(root, 'redis_cluster_ready')
     startPort = 12000
     redisUrl = f'redis://localhost:{startPort}'
+
     redisPassword = 'foobar'
-    redisUser = 'fooser'
+    redisUser = None
+
+    serverVersion = getRedisServerMajorVersion()
+    if serverVersion >= 6:
+        redisUser = 'fooser'
+
     size = 3
     task = asyncio.ensure_future(
         runNewCluster(root, startPort, size, redisPassword, redisUser)

@@ -100,7 +100,9 @@ async def migrateSlot(
         host = destinationNode.ip
         port = destinationNode.port
         db = 0
-        timeout = 5000  # 5 seconds timeout
+
+        timeout = 60000  # 60 seconds timeout
+        # See CLUSTER_MANAGER_MIGRATE_TIMEOUT in redis-cli
         try:
             args = ['MIGRATE', host, port, "", db, timeout]
 
@@ -167,19 +169,7 @@ async def runClusterCheck(port):
     stdout, stderr = await proc.communicate()
 
 
-async def binPackingReshardCoroutine(
-    redisUrls, redisPassword, redisUser, weights, timeout, dry=False, nodeId=None
-):
-    redisClient = RedisClient(redisUrls, redisPassword, redisUser)
-    nodes = await redisClient.cluster_nodes()
-
-    # There will be as many bins as there are master nodes
-    masterNodes = [node for node in nodes if node.role == 'master']
-    masterClients = [
-        makeClientfromNode(node, redisPassword, redisUser) for node in masterNodes
-    ]
-    binCount = len(masterNodes)
-
+def computeSlotsAssignmentFromWeights(weights, binCount):
     # Multiple keys could hash to the same hash-slot (collisions), so
     # we need to feed to binpacking a list of [slot: weight], not
     # a list of [key: weight]
@@ -201,6 +191,108 @@ async def binPackingReshardCoroutine(
         binSlots.sort()
         allSlots.append(binSlots)
 
+    return allSlots
+
+
+async def binPackingReshardCoroutine(
+    redisUrls, redisPassword, redisUser, weights, timeout, dry=False, nodeId=None
+):
+    redisClient = RedisClient(redisUrls, redisPassword, redisUser)
+    nodes = await redisClient.cluster_nodes()
+
+    # There will be as many bins as there are master nodes
+    masterNodes = [node for node in nodes if node.role == 'master']
+    binCount = len(masterNodes)
+
+    masterClients = [
+        makeClientfromNode(node, redisPassword, redisUser) for node in masterNodes
+    ]
+
+    allSlots = computeSlotsAssignmentFromWeights(weights, binCount)
+
+    return await moveSlots(
+        allSlots,
+        masterNodes,
+        masterClients,
+        redisClient,
+        redisUrls,
+        redisPassword,
+        redisUser,
+        timeout,
+        dry,
+        nodeId,
+    )
+
+
+async def moveSlotsReshardCoroutine(
+    redisUrls, redisPassword, redisUser, sourceNodeId, targetNodeId, slots, timeout, dry
+):
+    redisClient = RedisClient(redisUrls, redisPassword, redisUser)
+    nodes = await redisClient.cluster_nodes()
+
+    # Check that input nodes are valid
+    foundSource = False
+    foundTarget = False
+    for node in nodes:
+        if node.node_id in (sourceNodeId, targetNodeId):
+            if node.role != 'master':
+                raise ValueError(f'Node {node.node_id} is not a master node')
+
+            if node.node_id == sourceNodeId:
+                foundSource = True
+            else:
+                foundTarget = True
+
+    if not foundSource:
+        raise ValueError(f'Source node {sourceNodeId} is not in cluster')
+    if not foundTarget:
+        raise ValueError(f'Target node {targetNodeId} is not in cluster')
+
+    # There will be as many bins as there are master nodes
+    masterNodes = [node for node in nodes if node.role == 'master']
+    binCount = len(masterNodes)
+
+    masterClients = [
+        makeClientfromNode(node, redisPassword, redisUser) for node in masterNodes
+    ]
+
+    migratingSlots = []
+    for node in masterNodes:
+        if node.node_id == sourceNodeId:
+            count = min(slots, len(node.slots))
+            migratingSlots = node.slots[:count]
+
+    allSlots = [[] for _ in range(binCount)]
+    for i, node in enumerate(masterNodes):
+        if node.node_id == targetNodeId:
+            allSlots[i] = migratingSlots
+
+    return await moveSlots(
+        allSlots,
+        masterNodes,
+        masterClients,
+        redisClient,
+        redisUrls,
+        redisPassword,
+        redisUser,
+        timeout,
+        dry,
+        nodeId=None,
+    )
+
+
+async def moveSlots(
+    allSlots,
+    masterNodes,
+    masterClients,
+    redisClient,
+    redisUrls,
+    redisPassword,
+    redisUser,
+    timeout,
+    dry,
+    nodeId,
+):
     # We need to know where each slots lives
     slotToNodes = await getSlotsToNodesMapping(redisClient)
 

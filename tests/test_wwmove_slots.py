@@ -1,5 +1,4 @@
-'''Test resharding and capturing keyspace information.
-Needs to be run last hence the weid name with zzz
+'''Test redis-cli like resharding
 
 Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
@@ -10,11 +9,10 @@ import tempfile
 import uuid
 
 from rcc.cluster.init_cluster import runNewCluster
-from rcc.cluster.keyspace_analyzer import analyzeKeyspace
-from rcc.cluster.reshard import binPackingReshardCoroutine
+from rcc.cluster.reshard import moveSlotsReshardCoroutine
 from rcc.cluster.info import getClusterSignature, runRedisCliClusterCheck
 
-from test_utils import makeClient
+from test_utils import makeClient, getRedisServerMajorVersion
 
 
 async def checkStrings(client):
@@ -42,9 +40,14 @@ async def coro():
     startPort = 12000
     redisUrl = f'redis://localhost:{startPort}'
     size = 3
-    redisPassword = ''
-    redisUser = ''
-    task = asyncio.ensure_future(
+    redisPassword = 'william'
+    redisUser = None
+
+    serverVersion = getRedisServerMajorVersion()
+    if serverVersion >= 6:
+        redisUser = 'bill'
+
+    asyncio.ensure_future(
         runNewCluster(root, startPort, size, redisPassword, redisUser)
     )
 
@@ -53,48 +56,44 @@ async def coro():
         await asyncio.sleep(0.1)
 
     client = makeClient(startPort, redisPassword, redisUser)
-    await checkStrings(client)
-
-    # now analyze keyspace for 3 seconds
-    task = asyncio.ensure_future(analyzeKeyspace(redisUrl, redisPassword, redisUser, 3))
-
-    # wait a tiny bit so that the analyzer is ready
-    # (it needs to make a couple of pubsub subscriptions)
-    await asyncio.sleep(0.1)
 
     # Write once
     for i in range(100):
         for j in range(i):
-            channel = f'channel_{i}'
+            key = f'channel_{i}'
             value = f'val_{i}'
-            streamId = await client.send(
-                'XADD', channel, 'MAXLEN', '~', '1', b'*', 'foo', value
-            )
-            assert streamId is not None
+            result = await client.send('SET', key, value)
+            assert result
 
     # Validate that we can read back what we wrote
     for i in range(1, 100):
-        channel = f'channel_{i}'
-        results = await client.send('XREAD', 'BLOCK', b'0', b'STREAMS', channel, '0-0')
-        results = results[channel.encode()]
-        # extract value
-        val = results[0][1][b'foo'].decode()
+        key = f'channel_{i}'
         value = f'val_{i}'
+        val = await client.send('GET', key)
+        val = val.decode()
         assert val == value
 
-    await task
-    keySpace = task.result()
-    weights = keySpace.keys
-
-    print('weights', weights)
     signature, balanced, fullCoverage = await getClusterSignature(
         redisUrl, redisPassword, redisUser
     )
     assert balanced
     assert fullCoverage
 
-    ret = await binPackingReshardCoroutine(
-        redisUrl, redisPassword, redisUser, weights, timeout=15
+    # Move slots from the first to the second node
+    nodes = await client.cluster_nodes()
+    sourceNodeId = nodes[0].node_id
+    targetNodeId = nodes[1].node_id
+    slots = 500
+
+    ret = await moveSlotsReshardCoroutine(
+        redisUrl,
+        redisPassword,
+        redisUser,
+        sourceNodeId,
+        targetNodeId,
+        slots,
+        timeout=15,
+        dry=False,
     )
     assert ret
 
@@ -110,21 +109,40 @@ async def coro():
 
     # Validate that we can read back what we wrote, after resharding
     for i in range(1, 100):
-        channel = f'channel_{i}'
-        results = await client.send('XREAD', 'BLOCK', b'0', b'STREAMS', channel, '0-0')
-        results = results[channel.encode()]
-        # extract value
-        val = results[0][1][b'foo'].decode()
+        key = f'channel_{i}'
         value = f'val_{i}'
+        val = await client.send('GET', key)
+        val = val.decode()
         assert val == value
 
-    # Do another reshard. This one should be a no-op
-    # This should return statistics about the resharding
-    ret = await binPackingReshardCoroutine(
-        redisUrl, redisPassword, redisUrl, weights, timeout=15
+    # Do another reshard.
+    ret = await moveSlotsReshardCoroutine(
+        redisUrl,
+        redisPassword,
+        redisUser,
+        sourceNodeId,
+        targetNodeId,
+        slots,
+        timeout=15,
+        dry=False,
     )
     assert ret
 
+    newSignature, balanced, fullCoverage = await getClusterSignature(
+        redisUrl, redisPassword, redisUser
+    )
+    assert signature != newSignature
+    assert balanced
+    assert fullCoverage
 
-def test_reshard():
+    # Validate that we can read back what we wrote, after resharding
+    for i in range(1, 100):
+        key = f'channel_{i}'
+        value = f'val_{i}'
+        val = await client.send('GET', key)
+        val = val.decode()
+        assert val == value
+
+
+def test_move_slots():
     asyncio.get_event_loop().run_until_complete(coro())
