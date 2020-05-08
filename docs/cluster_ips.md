@@ -63,11 +63,11 @@ Commands:
   migrate
   publish           Publish to a channel
   reshard           Reshard using the bin-packing technique
-  sub               Subscribe to a channel rcc sub --redis_url...
-  subscribe         Subscribe to a channel rcc subscribe --redis_url...
+  sub               Subscribe to a channel rcc sub --redis-url...
+  subscribe         Subscribe to a channel rcc subscribe --redis-url...
 ~ $ rcc --version
 rcc, version 0.7.4
-~ $ rcc cluster-check --redis_url redis://172.24.222.56:6379
+~ $ rcc cluster-check --redis-url redis://172.24.222.56:6379
 cluster unhealthy. Re-run with -v
 ```
 
@@ -77,7 +77,7 @@ signature are different. This could be because slots assignments are differents
 between nodes, or if slave/masters assignments differs.
 
 ```
-~ $ rcc -v cluster-check --redis_url redis://172.24.222.56:6379
+~ $ rcc -v cluster-check --redis-url redis://172.24.222.56:6379
 2020-02-26 01:58:53 INFO redis://172.24.222.56:6379 5f9bcb66a8e67859342aa614082f1b24 balanced True coverage True
 2020-02-26 01:58:53 INFO
 46e2fe542420f0adf7164d828e4e8e7b2726d90f 172.24.222.56:6379 slave
@@ -208,7 +208,7 @@ It's the right now. Let's re-run the cluster-check command, it will happilly suc
 ~ $
 ~ $
 ~ $
-~ $ rcc -v cluster-check --redis_url redis://172.24.222.56:6379
+~ $ rcc -v cluster-check --redis-url redis://172.24.222.56:6379
 2020-02-26 02:11:44 INFO redis://172.24.222.56:6379 5f9bcb66a8e67859342aa614082f1b24 balanced True coverage True
 2020-02-26 02:11:44 INFO
 46e2fe542420f0adf7164d828e4e8e7b2726d90f 172.24.222.56:6379 slave
@@ -269,7 +269,7 @@ Hooray ! Now we can finally reshard the cluster since it is in a good state.
 
 ```
 ~ $
-~ $ rcc reshard --redis_url redis://172.24.222.56:6379
+~ $ rcc reshard --redis-url redis://172.24.222.56:6379
 file descriptors ulimit: 1048576
 resharding can be hungry, bump it with ulimit -n if needed
 == b77fd799122312b936e99e7038cfd34d8a30f7f0 / 172.25.189.166:6379 ==
@@ -290,7 +290,7 @@ Waiting for cluster view to be consistent...
 .......2020-02-26 02:34:37 ERROR timeout exceeded
 ~ $
 ~ $
-~ $ rcc reshard --redis_url redis://172.24.222.56:6379 --timeout 30
+~ $ rcc reshard --redis-url redis://172.24.222.56:6379 --timeout 30
 file descriptors ulimit: 1048576
 resharding can be hungry, bump it with ulimit -n if needed
 == b77fd799122312b936e99e7038cfd34d8a30f7f0 / 172.25.189.166:6379 ==
@@ -329,7 +329,7 @@ Waiting for cluster view to be consistent...
 ~ $
 ~ $
 ~ $
-~ $ rcc reshard --redis_url redis://172.24.222.56:6379 --timeout 45
+~ $ rcc reshard --redis-url redis://172.24.222.56:6379 --timeout 45
 file descriptors ulimit: 1048576
 resharding can be hungry, bump it with ulimit -n if needed
 == b77fd799122312b936e99e7038cfd34d8a30f7f0 / 172.25.189.166:6379 ==
@@ -368,17 +368,17 @@ Waiting for cluster view to be consistent...
 ~ $
 ~ $
 ~ $
-~ $ rcc cluster-check --redis_url redis://172.24.222.56:6379
+~ $ rcc cluster-check --redis-url redis://172.24.222.56:6379
 cluster ok
 ~ $
 ~ $
 ~ $
-~ $ rcc cluster-nodes --redis_url redis://172.24.222.56:6379
+~ $ rcc cluster-nodes --redis-url redis://172.24.222.56:6379
 Usage: rcc cluster-nodes [OPTIONS]
 Try "rcc cluster-nodes --help" for help.
 
-Error: no such option: --redis_url  Did you mean --redis_urls?
-~ $ rcc cluster-nodes --redis_urls redis://172.24.222.56:6379
+Error: no such option: --redis-url  Did you mean --redis_urls?
+~ $ rcc cluster-nodes --redis-urls redis://172.24.222.56:6379
 46e2fe542420f0adf7164d828e4e8e7b2726d90f 172.24.222.56:6379 slave
 10767e9f3de8cc7a052c8a9146eb350d116910c1 172.24.250.232:6379 slave
 b77fd799122312b936e99e7038cfd34d8a30f7f0 172.25.189.166:6379 master 3277-4261 4263-4279 4281-4914

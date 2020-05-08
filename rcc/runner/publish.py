@@ -34,7 +34,7 @@ async def pub(
 
 
 @click.command()
-@click.option('--redis_url', '-r', default='redis://localhost')
+@click.option('--redis-url', '-u', default='redis://localhost')
 @click.option('--port', '-p')
 @click.option('--password', '-a')
 @click.option('--user')

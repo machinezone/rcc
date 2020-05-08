@@ -34,7 +34,7 @@ The redis cluster is started with: `rcc make-cluster` ; rcc has a convenience su
 ### Keyspace access analysis before resharding
 
 ```
-rcc keyspace --redis_url redis://localhost:11000 --timeout 10
+rcc keyspace -u redis://localhost:11000 --timeout 10
 ...
 == Nodes ==
 # each ∎ represents a count of 105. total 15515
@@ -46,7 +46,7 @@ rcc keyspace --redis_url redis://localhost:11000 --timeout 10
 ### Resharding
 
 ```
-$ rcc reshard --redis_url redis://localhost:11000
+$ rcc reshard -u redis://localhost:11000
 file descriptors ulimit: 1024
 resharding can be hungry, bump it with ulimit -n if needed
 == f3fa13802f339abb98ccb377e8a1a4eb957be987 / 127.0.0.1:11000 ==
@@ -87,7 +87,7 @@ It roughtly looks like we took slots away from the first node, and gave them to 
 ### Keyspace access analysis after resharding
 
 ```
-rcc keyspace --redis_url redis://localhost:11000 --timeout 10
+rcc keyspace -u redis://localhost:11000 --timeout 10
 ...
 == Nodes ==
 # each ∎ represents a count of 79. total 15114

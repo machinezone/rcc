@@ -12,9 +12,12 @@ import click
 from rcc.cluster.init_cluster import runNewCluster
 
 
+#
+# FIXME: need option to set the number of replicas
+#
 @click.command()
 @click.option('--size', default=3, type=int)
-@click.option('--start_port', default=11000, type=int)
+@click.option('--start_port', default=30001, type=int)
 @click.option('--password', '-a')
 @click.option('--user')
 def make_cluster(size, start_port, password, user):

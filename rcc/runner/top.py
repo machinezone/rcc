@@ -75,7 +75,7 @@ async def printRedisClusterInfoCoro(
 
 @click.command()
 @click.option(
-    '--redis_url', '-r', envvar='RCC_REDIS_URL', default='redis://localhost:11000'
+    '--redis-url', '-u', envvar='RCC_REDIS_URL', default='redis://localhost:30001'
 )
 @click.option('--password', '-a')
 @click.option('--user')

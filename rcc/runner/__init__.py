@@ -17,7 +17,7 @@ coloredlogs.install(level='WARNING', fmt=LOGGING_FORMAT)
 
 
 @click.option('--verbose', '-v', envvar='RCC_VERBOSE', count=True)
-@click.option('--uv', '-u', envvar='RCC_UVLOOP', is_flag=True, help='Use uvloop')
+@click.option('--uv', envvar='RCC_UVLOOP', is_flag=True, help='Use uvloop')
 @click.group()
 @click.version_option()
 def main(verbose, uv):
