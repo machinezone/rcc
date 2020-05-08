@@ -38,7 +38,7 @@ jobs:
     - name: Test with pytest
       run: |
         pip install --requirement tests/requirements.txt
-        make update_version
+        echo "0.0.1" > DOCKER_VERSION
         pip install -e .
         pip install "file://`pwd`#egg=rcc[dev]"
         py.test -v --disable-warnings tests/*.py
