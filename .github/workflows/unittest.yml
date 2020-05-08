@@ -38,6 +38,7 @@ jobs:
     - name: Test with pytest
       run: |
         pip install --requirement tests/requirements.txt
+        make update_version
         pip install -e .
         pip install "file://`pwd`#egg=rcc[dev]"
         py.test -v --disable-warnings tests/*.py
