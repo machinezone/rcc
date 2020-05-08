@@ -47,7 +47,7 @@ async def coro():
     if serverVersion >= 6:
         redisUser = 'bill'
 
-    asyncio.ensure_future(
+    task = asyncio.ensure_future(
         runNewCluster(root, startPort, size, redisPassword, redisUser)
     )
 
@@ -142,6 +142,8 @@ async def coro():
         val = await client.send('GET', key)
         val = val.decode()
         assert val == value
+
+    task.cancel()
 
 
 def test_move_slots():
