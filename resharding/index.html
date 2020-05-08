@@ -133,7 +133,7 @@ _pubsub::foo,5035
 </ul>
 <p>The redis cluster is started with: <code>rcc make-cluster</code> ; rcc has a convenience sub-command to generate config file for cluster (by default 3 masters and 3 replicas), and finally initialize the cluster.</p>
 <h3 id="keyspace-access-analysis-before-resharding">Keyspace access analysis before resharding</h3>
-<pre><code>rcc keyspace --redis_url redis://localhost:11000 --timeout 10
+<pre><code>rcc keyspace -u redis://localhost:11000 --timeout 10
 ...
 == Nodes ==
 # each ∎ represents a count of 105. total 15515
@@ -143,7 +143,7 @@ _pubsub::foo,5035
 </code></pre>
 
 <h3 id="resharding_1">Resharding</h3>
-<pre><code>$ rcc reshard --redis_url redis://localhost:11000
+<pre><code>$ rcc reshard -u redis://localhost:11000
 file descriptors ulimit: 1024
 resharding can be hungry, bump it with ulimit -n if needed
 == f3fa13802f339abb98ccb377e8a1a4eb957be987 / 127.0.0.1:11000 ==
@@ -181,7 +181,7 @@ Waiting for cluster view to be consistent...
 
 <p>It roughtly looks like we took slots away from the first node, and gave them to the other two redis instances.</p>
 <h3 id="keyspace-access-analysis-after-resharding">Keyspace access analysis after resharding</h3>
-<pre><code>rcc keyspace --redis_url redis://localhost:11000 --timeout 10
+<pre><code>rcc keyspace -u redis://localhost:11000 --timeout 10
 ...
 == Nodes ==
 # each ∎ represents a count of 79. total 15114
