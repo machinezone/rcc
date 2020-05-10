@@ -22,10 +22,17 @@ def hasExecutable(program):
 
 
 def makeServerConfig(
-    root, readyPath, startPort=11000, masterNodeCount=3, password=None, user=None
+    root,
+    readyPath,
+    startPort=11000,
+    masterNodeCount=3,
+    password=None,
+    user=None,
+    replicas=1,
 ):
     # create config files
-    for i in range(masterNodeCount * 2):
+    nodeCount = masterNodeCount * (1 + replicas)
+    for i in range(nodeCount):
 
         serverPath = os.path.join(root, f'server{i}.conf')
         with open(serverPath, 'w') as f:
@@ -45,9 +52,7 @@ def makeServerConfig(
                 f.write(f'requirepass {password}' + '\n')
                 f.write(f'masterauth {password}' + '\n')
 
-    ips = ' '.join(
-        ['127.0.0.1:' + str(startPort + i) for i in range(masterNodeCount * 2)]
-    )
+    ips = ' '.join(['127.0.0.1:' + str(startPort + i) for i in range(nodeCount)])
 
     # Create a Procfile
     # server1: redis-server server1.conf --protected-mode no ...
@@ -61,7 +66,7 @@ def makeServerConfig(
 
     procfile = os.path.join(root, 'Procfile')
     with open(procfile, 'w') as f:
-        for i in range(masterNodeCount * 2):
+        for i in range(nodeCount):
             port = startPort + i
             f.write(f'server{i}: redis-server server{i}.conf ')
             f.write(f'--protected-mode no --cluster-enabled yes --port {port}\n')
@@ -101,7 +106,7 @@ def makeServerConfig(
     # Print cluster init command
     host = 'localhost'
     port = startPort
-    args = ClusterCreateArgs(host, port, password, user, ips, replicas=1)
+    args = ClusterCreateArgs(host, port, password, user, ips, replicas)
     return args
 
 
@@ -179,15 +184,17 @@ async def waitForAllConnectionsToBeReady(urls, password, user, timeout: int):
         sys.stderr.write('\n')
 
 
-async def runNewCluster(root, startPort, size, password, user):
+async def runNewCluster(root, startPort, size, password, user, replicas=1):
     size = int(size)
 
     # FIXME: port range does not deal with redis-cluster-proxy
-    portRange = [port for port in range(startPort, startPort + 2 * size)]
+    portRange = [port for port in range(startPort, startPort + (1 + replicas) * size)]
     click.secho(f'1/6 Creating server config for range {portRange}', bold=True)
 
     readyPath = os.path.join(root, 'redis_cluster_ready')
-    createArgs = makeServerConfig(root, readyPath, startPort, size, password, user)
+    createArgs = makeServerConfig(
+        root, readyPath, startPort, size, password, user, replicas
+    )
 
     click.secho('2/6 Check that ports are opened', bold=True)
     await checkOpenedPort(portRange, timeout=10)
@@ -198,10 +205,7 @@ async def runNewCluster(root, startPort, size, password, user):
 
         # Check that all connections are ready
         click.secho(f'4/6 Wait for the cluster nodes to be running', bold=True)
-        urls = [
-            f'redis://localhost:{port}'
-            for port in range(startPort, startPort + 2 * size)
-        ]
+        urls = [f'redis://localhost:{port}' for port in portRange]
         await waitForAllConnectionsToBeReady(urls, password, user, timeout=5)
 
         # Initialize the cluster (master/slave assignments, etc...)
