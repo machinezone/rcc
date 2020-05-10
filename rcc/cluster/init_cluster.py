@@ -12,6 +12,7 @@ import distutils.spawn
 
 import click
 
+from rcc.cluster.create import ClusterCreateArgs, makeCreateCmd
 from rcc.cluster.info import clusterCheck
 from rcc.client import RedisClient
 
@@ -100,21 +101,8 @@ def makeServerConfig(
     # Print cluster init command
     host = 'localhost'
     port = startPort
-
-    auth = ''
-    if password:
-        auth += f'-a {password}'
-        if user:
-            auth += f' --user {user}'
-
-    # FIXME test hack when using redis-4
-    # redisCli = '/usr/local/Cellar/redis/5.0.8/bin/redis-cli'
-
-    redisCli = 'redis-cli'
-    clusterInitCmd = f'echo yes | {redisCli} {auth} -h {host} -p {port} '
-    clusterInitCmd += f'--cluster create {ips} --cluster-replicas 1'
-
-    return clusterInitCmd
+    args = ClusterCreateArgs(host, port, password, user, ips, replicas=1)
+    return args
 
 
 async def runServer(root, startPort):
@@ -199,7 +187,7 @@ async def runNewCluster(root, startPort, size, password, user):
     click.secho(f'1/6 Creating server config for range {portRange}', bold=True)
 
     readyPath = os.path.join(root, 'redis_cluster_ready')
-    initCmd = makeServerConfig(root, readyPath, startPort, size, password, user)
+    createArgs = makeServerConfig(root, readyPath, startPort, size, password, user)
 
     click.secho('2/6 Check that ports are opened', bold=True)
     await checkOpenedPort(portRange, timeout=10)
@@ -217,9 +205,9 @@ async def runNewCluster(root, startPort, size, password, user):
         await waitForAllConnectionsToBeReady(urls, password, user, timeout=5)
 
         # Initialize the cluster (master/slave assignments, etc...)
-        click.secho(f'5/6 Initialize the cluster', bold=True)
-        print(initCmd)
-        await initCluster(initCmd)
+        click.secho(f'5/6 Create the cluster', bold=True)
+        createCmd = makeCreateCmd(createArgs)
+        await initCluster(createCmd)
 
         # We just initialized the cluster, wait until it is 'consistent' and good to use
         click.secho(f'6/6 Wait for all cluster nodes to be consistent', bold=True)

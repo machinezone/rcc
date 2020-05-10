@@ -21,7 +21,7 @@ from rcc.cluster.init_cluster import runNewCluster
 @click.option('--password', '-a')
 @click.option('--user')
 def make_cluster(size, start_port, password, user):
-    '''Create, configure, initialize and run a redis cluste  r
+    '''Create, initialize and run a redis cluster
     and a redis cluster proxy'''
     root = tempfile.mkdtemp()
 
