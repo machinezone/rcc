@@ -12,7 +12,7 @@ import distutils.spawn
 
 import click
 
-from rcc.cluster.create import ClusterCreateArgs, makeCreateCmd
+from rcc.cluster.create import ClusterCreateArgs, makeCreateCmd, createCluster
 from rcc.cluster.info import clusterCheck
 from rcc.client import RedisClient
 
@@ -106,7 +106,7 @@ def makeServerConfig(
     # Print cluster init command
     host = 'localhost'
     port = startPort
-    args = ClusterCreateArgs(host, port, password, user, ips, replicas)
+    args = ClusterCreateArgs(masterNodeCount, host, port, password, user, ips, replicas)
     return args
 
 
@@ -184,7 +184,9 @@ async def waitForAllConnectionsToBeReady(urls, password, user, timeout: int):
         sys.stderr.write('\n')
 
 
-async def runNewCluster(root, startPort, size, password, user, replicas=1):
+async def runNewCluster(
+    root, startPort, size, password, user, replicas=1, manual=False
+):
     size = int(size)
 
     # FIXME: port range does not deal with redis-cluster-proxy
@@ -210,8 +212,13 @@ async def runNewCluster(root, startPort, size, password, user, replicas=1):
 
         # Initialize the cluster (master/slave assignments, etc...)
         click.secho(f'5/6 Create the cluster', bold=True)
-        createCmd = makeCreateCmd(createArgs)
-        await initCluster(createCmd)
+        if manual:
+            # Do it ourself
+            await createCluster(createArgs)
+        else:
+            # Use redis-cli
+            createCmd = makeCreateCmd(createArgs)
+            await initCluster(createCmd)
 
         # We just initialized the cluster, wait until it is 'consistent' and good to use
         click.secho(f'6/6 Wait for all cluster nodes to be consistent', bold=True)

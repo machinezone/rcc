@@ -115,6 +115,12 @@ async def getClusterUrls(redisUrl, redisPassword, redisUser):
     return urls
 
 
+async def getClusterNodeCount(redisUrl, redisPassword, redisUser):
+    redisClient = RedisClient(redisUrl, redisPassword, redisUser)
+    nodes = await redisClient.cluster_nodes()
+    return len(nodes)
+
+
 async def clusterCheck(redisUrl, redisPassword, redisUser):
     '''
     Get all the nodes in the cluster

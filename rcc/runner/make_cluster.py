@@ -21,14 +21,15 @@ from rcc.cluster.init_cluster import runNewCluster
 @click.option('--start_port', default=30001, type=int)
 @click.option('--password', '-a')
 @click.option('--user')
-def make_cluster(size, start_port, password, user, replicas):
+@click.option('--manual', '-m', is_flag=True)
+def make_cluster(size, start_port, password, user, replicas, manual):
     '''Create, initialize and run a redis cluster
     and a redis cluster proxy'''
     root = tempfile.mkdtemp()
 
     try:
         asyncio.get_event_loop().run_until_complete(
-            runNewCluster(root, start_port, size, password, user, replicas)
+            runNewCluster(root, start_port, size, password, user, replicas, manual)
         )
     except Exception as e:
         logging.error(f'cluster_nodes error: {e}')
