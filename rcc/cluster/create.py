@@ -88,14 +88,10 @@ async def createCluster(args):
 
     # Setting slots
     for i in range(args.shards):
-        masterNodeIdx = i * (1 + args.replicas)
-        masterNodeAddress = nodes[masterNodeIdx]
-        masterNodeIp, _, masterNodePort = masterNodeAddress.partition(':')
-
-        redisUrl = f'redis://{masterNodeAddress}'
+        nodeAddress = nodes[i]
+        redisUrl = f'redis://{nodeAddress}'
         masterClient = RedisClient(redisUrl, args.password, args.user)
         await masterClient.send('CLUSTER', 'ADDSLOTS', *allSlots[i])
-        masterNodeId = await masterClient.send('CLUSTER', 'MYID')
 
     # Give each node its own 'epoch'
     click.secho('>>> Assign a different config epoch to each node', bold=True)
@@ -142,19 +138,31 @@ async def createCluster(args):
 
     sys.stderr.write('\n')
 
+    #
+    # [m1, m2, ..., mn, r1, r2, ...]
+    # [m1, m2, ...,      mn, r1, r2, ..., rn,    s1, s2, ...,    sn]
+    #
+    # <----- args.shards -> <--- args.shards --> <--- args.shards ->
+    #
+    # r1 = args.shards + 1
+    # ...
+    # ri = args.shards + i
+    #
+    # s1 = replicas * args.shards + 1
+    # ...
+    # si = replicas * args.shards + i
+    #
+
     # Now we can set the replicas
     click.secho('>>> Assigning replicas', bold=True)
     for i in range(args.shards):
-        masterNodeIdx = i * (1 + args.replicas)
-        masterNodeAddress = nodes[masterNodeIdx]
-        masterNodeIp, _, masterNodePort = masterNodeAddress.partition(':')
-
+        masterNodeAddress = nodes[i]
         redisUrl = f'redis://{masterNodeAddress}'
         masterClient = RedisClient(redisUrl, args.password, args.user)
         masterNodeId = await masterClient.send('CLUSTER', 'MYID')
 
         for j in range(args.replicas):
-            replicaIp = nodes[masterNodeIdx + j + 1]
+            replicaIp = nodes[(j + 1) * args.shards + i]
             print(f'Setting replica {replicaIp} to {masterNodeAddress}')
 
             url = f'redis://{replicaIp}'

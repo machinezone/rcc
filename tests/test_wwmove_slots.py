@@ -42,13 +42,15 @@ async def coro():
     size = 3
     redisPassword = 'william'
     redisUser = None
+    replicas = 1
+    manual = True
 
     serverVersion = getRedisServerMajorVersion()
     if serverVersion >= 6:
         redisUser = 'bill'
 
     task = asyncio.ensure_future(
-        runNewCluster(root, startPort, size, redisPassword, redisUser)
+        runNewCluster(root, startPort, size, redisPassword, redisUser, replicas, manual)
     )
 
     # Wait until cluster is initialized
