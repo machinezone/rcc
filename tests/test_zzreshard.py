@@ -39,13 +39,17 @@ async def checkStrings(client):
 async def coro():
     root = tempfile.mkdtemp()
     clusterReadyFile = os.path.join(root, 'redis_cluster_ready')
-    startPort = 12000
+    startPort = 14000
     redisUrl = f'redis://localhost:{startPort}'
     size = 3
-    redisPassword = ''
+    # redisPassword = 'my-secret-password'
+    redisPassword = None
     redisUser = ''
+    replicas = 1
+    manual = True
+
     task = asyncio.ensure_future(
-        runNewCluster(root, startPort, size, redisPassword, redisUser)
+        runNewCluster(root, startPort, size, redisPassword, redisUser, replicas, manual)
     )
 
     # Wait until cluster is initialized
@@ -65,21 +69,17 @@ async def coro():
     # Write once
     for i in range(100):
         for j in range(i):
-            channel = f'channel_{i}'
+            key = f'channel_{i}'
             value = f'val_{i}'
-            streamId = await client.send(
-                'XADD', channel, 'MAXLEN', '~', '1', b'*', 'foo', value
-            )
-            assert streamId is not None
+            result = await client.send('SET', key, value)
+            assert result
 
     # Validate that we can read back what we wrote
     for i in range(1, 100):
-        channel = f'channel_{i}'
-        results = await client.send('XREAD', 'BLOCK', b'0', b'STREAMS', channel, '0-0')
-        results = results[channel.encode()]
-        # extract value
-        val = results[0][1][b'foo'].decode()
+        key = f'channel_{i}'
         value = f'val_{i}'
+        val = await client.send('GET', key)
+        val = val.decode()
         assert val == value
 
     await task
@@ -110,12 +110,10 @@ async def coro():
 
     # Validate that we can read back what we wrote, after resharding
     for i in range(1, 100):
-        channel = f'channel_{i}'
-        results = await client.send('XREAD', 'BLOCK', b'0', b'STREAMS', channel, '0-0')
-        results = results[channel.encode()]
-        # extract value
-        val = results[0][1][b'foo'].decode()
+        key = f'channel_{i}'
         value = f'val_{i}'
+        val = await client.send('GET', key)
+        val = val.decode()
         assert val == value
 
     # Do another reshard. This one should be a no-op
@@ -124,6 +122,9 @@ async def coro():
         redisUrl, redisPassword, redisUrl, weights, timeout=15
     )
     assert ret
+
+    task.cancel()
+    await task
 
 
 def test_reshard():

@@ -4,7 +4,6 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import asyncio
-import os
 
 from rcc.client import RedisClient
 
@@ -43,15 +42,3 @@ async def getSupportedCommands(client):
 async def isCommandSupported(client, cmd):
     commands = await getSupportedCommands(client)
     return cmd in commands
-
-
-def getRedisServerMajorVersion():
-    cmd = f'redis-server --version'
-    output = os.popen(cmd).read()
-    for token in output.split():
-        if token.startswith('v='):
-            version = token.split('=')[1]
-            major, _, _ = version.partition('.')
-            return int(major)
-
-    raise ValueError('Cannot compute redis-server version')

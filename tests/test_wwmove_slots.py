@@ -11,8 +11,9 @@ import uuid
 from rcc.cluster.init_cluster import runNewCluster
 from rcc.cluster.reshard import moveSlotsReshardCoroutine
 from rcc.cluster.info import getClusterSignature, runRedisCliClusterCheck
+from rcc.version import getRedisServerMajorVersion
 
-from test_utils import makeClient, getRedisServerMajorVersion
+from test_utils import makeClient
 
 
 async def checkStrings(client):
@@ -146,6 +147,7 @@ async def coro():
         assert val == value
 
     task.cancel()
+    await task
 
 
 def test_move_slots():

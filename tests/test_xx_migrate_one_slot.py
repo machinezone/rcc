@@ -12,18 +12,21 @@ from rcc.cluster.init_cluster import runNewCluster
 from rcc.cluster.reshard import makeClientfromNode, waitForClusterViewToBeConsistent
 from rcc.cluster.info import getClusterSignature, runRedisCliClusterCheck
 from rcc.cluster.reshard import migrateSlot
+from rcc.version import getRedisServerMajorVersion
 
-from test_utils import makeClient, getRedisServerMajorVersion
+from test_utils import makeClient
 
 
 async def coro():
     root = tempfile.mkdtemp()
     clusterReadyFile = os.path.join(root, 'redis_cluster_ready')
-    startPort = 12000
+    startPort = 13000
     redisUrl = f'redis://localhost:{startPort}'
 
     redisPassword = 'foobar'
     redisUser = None
+    replicas = 1
+    manual = True
 
     serverVersion = getRedisServerMajorVersion()
     if serverVersion >= 6:
@@ -31,7 +34,7 @@ async def coro():
 
     size = 3
     task = asyncio.ensure_future(
-        runNewCluster(root, startPort, size, redisPassword, redisUser)
+        runNewCluster(root, startPort, size, redisPassword, redisUser, replicas, manual)
     )
 
     # Wait until cluster is initialized
@@ -40,21 +43,15 @@ async def coro():
 
     client = makeClient(startPort, redisPassword, redisUser)
 
-    i = 2
-    channel = 'channel_2'
-    value = f'val_{i}'
-    streamId = await client.send(
-        'XADD', channel, 'MAXLEN', '~', '1', b'*', 'foo', value
-    )
-    assert streamId is not None
+    # Write something in redis
+    key = 'channel_2'
+    value = 'val_2'
+    res = await client.send('SET', key, value)
+    assert res is not None
 
-    # Validate that we can read back what we wrote
-    channel = 'channel_2'
-    results = await client.send('XREAD', 'BLOCK', b'0', b'STREAMS', channel, '0-0')
-    results = results[channel.encode()]
-    # extract value
-    val = results[0][1][b'foo'].decode()
-    value = f'val_{i}'
+    # Validate that we can read back what we wrote earlier
+    results = await client.send('GET', key)
+    val = results.decode()
     assert val == value
 
     signature, balanced, fullCoverage = await getClusterSignature(
@@ -99,17 +96,12 @@ async def coro():
     await runRedisCliClusterCheck(startPort, redisPassword, redisUser)
 
     # Validate that we can read back what we wrote, after resharding
-    # breakpoint()
-
-    channel = 'channel_2'
-    results = await client.send('XREAD', 'BLOCK', b'0', b'STREAMS', channel, '0-0')
-    results = results[channel.encode()]
-    # extract value
-    val = results[0][1][b'foo'].decode()
-    value = f'val_{i}'
+    results = await client.send('GET', key)
+    val = results.decode()
     assert val == value
 
     task.cancel()
+    await task
 
 
 def test_migrate_one_slot():

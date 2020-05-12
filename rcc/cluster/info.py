@@ -9,6 +9,7 @@ import hashlib
 import logging
 
 from rcc.client import RedisClient
+from rcc.version import getRedisServerMajorVersion
 
 
 async def getSlotsToNodesMapping(redisClient):
@@ -154,6 +155,11 @@ async def clusterCheck(redisUrl, redisPassword, redisUser):
 
 
 async def runRedisCliClusterCheck(port, redisPassword, redisUser):
+    serverVersion = getRedisServerMajorVersion()
+    if serverVersion < 5:
+        logging.warning('cluster check not supported in redis-cli')
+        return
+
     auth = ''
     if redisPassword:
         auth += f'-a {redisPassword}'
