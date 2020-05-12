@@ -39,9 +39,7 @@ async def coro(monitor):
             keys.append(channel)
 
             value = f'val_{i}'
-            streamId = await redisClient.send(
-                'XADD', channel, 'MAXLEN', '~', '1', b'*', 'foo', value
-            )
+            streamId = await redisClient.send('SET', channel, value)
             assert streamId is not None
 
     await task
@@ -52,7 +50,7 @@ async def coro(monitor):
     assert len(weights) >= 50
 
     # Make sure we did capture one xadd
-    assert 'XADD' in keySpace.commands
+    assert 'SET' in keySpace.commands
 
     # cleanup
     for key in keys:
