@@ -53,6 +53,7 @@ async def sharedClient():
 
     # Now cancel the server and wait a bit (do we need this ?)
     redisServerTask.cancel()
+    await redisServerTask
 
     await asyncio.sleep(0.1)  # wait a bit until the server is not running
 

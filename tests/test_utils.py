@@ -26,6 +26,10 @@ async def runRedisServer(port):
     try:
         proc = await asyncio.create_subprocess_shell(cmd)
         stdout, stderr = await proc.communicate()
+
+    except asyncio.CancelledError:
+        print('Cancelling redis-server')
+
     finally:
         proc.terminate()
 
