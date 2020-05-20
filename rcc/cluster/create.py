@@ -34,8 +34,9 @@ def makeCreateCmd(args):
         if args.user:
             auth += f' --user {args.user}'
 
+    # --cluster-yes is supported in redis unstable, after 6 got released
     redisCli = 'redis-cli'
-    cmd = f'echo yes | {redisCli} {auth} -h {args.host} -p {args.port} '
+    cmd = f'yes | {redisCli} {auth} -h {args.host} -p {args.port} '
     cmd += f'--cluster create {args.ips} --cluster-replicas {args.replicas}'
     return cmd
 
