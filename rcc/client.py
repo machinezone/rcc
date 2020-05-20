@@ -57,9 +57,12 @@ class RedisClient(ClusterCommandsMixin, PubSubCommandsMixin, GenericCommandsMixi
     async def connect(self):
         await self.connection.connect()
 
-        # FIXME
-        info = await self.send('INFO')
-        self.cluster = info.get('cluster_enabled') == '1'
+        try:
+            info = await self.send('INFO')
+        except hiredis.ReplyError:
+            pass
+        else:
+            self.cluster = info.get('cluster_enabled') == '1'
 
         if self.cluster:
             await self.connect_cluster_nodes()
