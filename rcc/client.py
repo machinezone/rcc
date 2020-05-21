@@ -21,8 +21,14 @@ from rcc.response import convertResponse
 
 
 class RedisClient(ClusterCommandsMixin, PubSubCommandsMixin, GenericCommandsMixin):
-    def __init__(self, url: str, password: str, user: str = None, multiplexing=False):
-        self.url = url
+    def __init__(
+        self,
+        url: str = None,
+        password: str = None,
+        user: str = None,
+        multiplexing=False,
+    ):
+        self.url = url or 'redis://localhost:6379'
 
         # FIXME: do we need those member variables ?
         self.password = password

@@ -37,9 +37,19 @@ rcc, version 0.9.48
 
 ## Rationale
 
-rcc started as an attempt at writing an asyncio redis-cluster aware python client. It is now mostly used a redis cluster tool, built on a minimal but functional redis client library.
+rcc started as an attempt at writing an asyncio redis-cluster aware python client. It evolved into a redis cluster tool, built on a minimal but functional redis client library.
 
 The main asyncio redis library, aioredis does not support redis cluster at this point. There is another library named aredis which has cluster support, but which has some small bugs for which pull requests existed, that were not merged until recently. Getting a redis client to work is not terribly hard, thanks to the design of redis, so I started this project and got it to work in a limited amount of time.
+
+## Library usage
+
+Nothing fancy. The api just uses .send to send commands and that's it, which was a great advice from Loris Cro that he is using in his [Zig OkRedis client](https://github.com/kristoff-it/zig-okredis).
+
+```
+client = RedisClient('redis://localhost:6379')
+await client.send('SET', 'foo', 'bar')
+result = await client.send('GET', 'foo')
+```
 
 ## Tools
 
