@@ -126,27 +126,30 @@ class RedisClient(ClusterCommandsMixin, PubSubCommandsMixin, GenericCommandsMixi
 
         return key
 
-    async def send(self, cmd, *args):
+    async def send(self, cmd, *args, **kargs):
         '''Small wrapper to be able to disconnect on error
         1. to avoid resource leaks
         2. to handle redis cluster re-configuring itself
         '''
         try:
-            return await self.doSend(cmd, *args)
+            # We need to extract the key to hash it in cluster mode
+            # key is at different spot than first args for
+            # some commands such as STREAMS
+            key = kargs.get('key')
+            if key is None:
+                key = self.findKey(cmd, *args)
+
+            return await self.doSend(cmd, key, *args)
         except asyncio.CancelledError:
             raise
         except Exception:
             self.close()
             raise
 
-    async def doSend(self, cmd, *args):
+    async def doSend(self, cmd, key, *args):
         '''Send a command to the redis server.
         Handle cluster mode redirects with the MOVE response
         '''
-        # We need to extract the key to hash it in cluster mode
-        key = self.findKey(cmd, *args)
-
-        # key is at different spot than first args for some commands such as STREAMS
         attempts = 10
 
         async with self.lock:
