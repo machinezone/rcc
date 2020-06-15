@@ -7,6 +7,7 @@ import os
 import json
 
 import click
+import tabulate
 
 
 def getEndpointsIps(service):
@@ -24,19 +25,25 @@ def getEndpointsIps(service):
     ips = []
     for address in addresses:
         ip = address.get('ip')
-        ips.append(ip)
+        name = address.get('targetRef', {}).get('name')
+        ips.append((ip, name))
 
     return ips
 
 
-def printEndpoints(service, port):
+def printEndpoints(service, port, full):
     ips = getEndpointsIps(service)
 
-    endpoints = []
-    for ip in ips:
-        endpoints.append(f'redis://{ip}:{port}')
+    if full:
+        rows = [['ip', 'name']]
+        rows.extend(ips)
+        print(tabulate.tabulate(rows, tablefmt="simple", headers="firstrow"))
+    else:
+        endpoints = []
+        for ip, _ in ips:
+            endpoints.append(f'redis://{ip}:{port}')
 
-    print(';'.join(endpoints))
+        print(';'.join(endpoints))
 
 
 def printRedisClusterInitCommand(service, port):
@@ -55,7 +62,8 @@ def printRedisClusterInitCommand(service, port):
 @click.command()
 @click.option('--service', default='redis-cluster')
 @click.option('--port', default=6379)
-def endpoints(service, port):
+@click.option('--full', is_flag=True)
+def endpoints(service, port, full):
     '''Print endpoints associated with a redis cluster service'''
 
-    printEndpoints(service, port)
+    printEndpoints(service, port, full)

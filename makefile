@@ -35,6 +35,9 @@ flake:
 test:
 	py.test --timeout=60 -sv -n 1 --disable-warnings tests/*.py
 
+test_parallel:
+	py.test --timeout=60 -sv -n 4 --disable-warnings tests/*.py
+
 mypy:
 	mypy --ignore-missing-imports rcc/*.py
 

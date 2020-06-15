@@ -4,7 +4,6 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import asyncio
-
 from rcc.client import RedisClient
 
 

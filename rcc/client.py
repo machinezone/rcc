@@ -132,66 +132,12 @@ class RedisClient(ClusterCommandsMixin, PubSubCommandsMixin, GenericCommandsMixi
         2. to handle redis cluster re-configuring itself
         '''
         try:
-            if self.multiplexing:
-                return await self.doSendSimple(cmd, *args)
-            else:
-                return await self.doSend(cmd, *args)
+            return await self.doSend(cmd, *args)
         except asyncio.CancelledError:
             raise
         except Exception:
             self.close()
             raise
-
-    async def doSendMultiplexed(self, cmd, *args):
-        '''Send a command to the redis server.
-        Handle cluster mode redirects with the MOVE response
-        '''
-        # We need to extract the key to hash it in cluster mode
-        key = self.findKey(cmd, *args)
-
-        # we should optimize this for the common case
-        connection = await self.getConnection(key)
-
-        fut = await connection.send(cmd, key, *args)
-        response = await fut
-
-        if self.needsRedirect(response):
-            return await self.handleRedirect(response, cmd, *args)
-
-        # we should handle other hiredis reply-error here,
-        # and potentially rethrow
-
-        return response
-
-    # FIXME locks / static method / ASKING
-    def needsRedirect(self, response):
-        responseType = type(response)
-        if responseType != hiredis.ReplyError:
-            return False
-
-        responseStr = str(response)
-        return responseStr.startswith('MOVED')
-
-    # FIXME locks
-    async def handleRedirect(self, response, cmd, *args):
-        responseStr = str(response)
-        tokens = responseStr.split()
-        slotStr = tokens[1]
-        slot = int(slotStr)
-        url = tokens[2]
-        url = 'redis://' + url
-
-        self.urls[slot] = url
-
-        # We need to extract the key to hash it in cluster mode
-        key = self.findKey(cmd, *args)
-
-        # we should optimize this for the common case
-        connection = await self.getConnection(key)
-
-        fut = await connection.send(cmd, key, *args)
-        response = await fut
-        return response
 
     async def doSend(self, cmd, *args):
         '''Send a command to the redis server.
