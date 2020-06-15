@@ -4,7 +4,12 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import asyncio
-import json
+import base64
+
+try:
+    import rapidjson as json
+except ImportError:
+    import json
 import logging
 import re
 import traceback
@@ -106,7 +111,14 @@ async def redisSubscriber(
                 data = msg[b'json']
 
                 payloadSize = len(data)
-                msg = json.loads(data)
+                try:
+                    msg = json.loads(data)
+                except json.JSONDecodeError:
+                    msgEncoded = base64.b64encode(data)
+                    err = f'malformed json: base64: {msgEncoded} raw: {data}'
+                    logging.error(err)
+                    continue
+
                 ret = await messageHandler.handleMsg(msg, lastId, payloadSize)
                 if not ret:
                     break
