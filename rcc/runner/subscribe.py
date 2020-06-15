@@ -35,11 +35,11 @@ class MessageHandlerClass(RedisSubscriberMessageHandlerClass):
     def log(self, msg):
         print(msg)
 
-    async def on_init(self, redisClient, streamExists, streamLength):
-        if redisClient is None:
+    async def on_init(self, initInfo):
+        if not initInfo.get('success', False):
             print('Failure connecting to redis')
         else:
-            print(f'stream exists: {streamExists} stream length: {streamLength}')
+            print(f'initInfo: {initInfo}')
 
     async def handleMsg(self, msg: str, position: str, payloadSize: int) -> bool:
         self.cnt += 1

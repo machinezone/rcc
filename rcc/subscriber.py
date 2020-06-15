@@ -37,12 +37,43 @@ class RedisSubscriberMessageHandlerClass(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    async def on_init(self, client: RedisClient, streamExists: bool, streamLength: int):
+    async def on_init(self, initInfo: dict):
         pass  # pragma: no cover
 
     @abstractmethod
     async def handleMsg(self, msg: dict, position: str, payloadSize: int) -> bool:
         return True  # pragma: no cover
+
+
+async def getClientIdForKey(client, key):
+    return await client.send('CLIENT', 'ID', key=key)
+
+
+async def getHostForKey(client, key):
+    # Check whether redis is running in cluster mode or not
+    try:
+        info = await client.send('INFO')
+    except Exception:
+        return f'{client.host}:{client.port}'
+
+    if info.get('cluster_enabled') == '0':
+        return f'{client.host}:{client.port}'
+
+    # Redis is running in cluster mode.
+    # 1. get the slot for a key
+    slot = await client.send('CLUSTER', 'KEYSLOT', key)
+
+    # 2. find which node is handling a slot
+    slots = await client.send('CLUSTER', 'SLOTS')
+
+    for slotInfo in slots:
+        if slotInfo[0] <= slot <= slotInfo[1]:
+            host = slotInfo[2][0].decode()
+            port = slotInfo[2][1]
+            return f'{host}:{port}'
+
+    # this should not happen, unless the cluster is being reconfigured
+    return 'unknown-host'
 
 
 async def redisSubscriber(
@@ -56,36 +87,29 @@ async def redisSubscriber(
 
     logPrefix = f'subscriber[{stream}]: {client}'
 
-    try:
-        # Create connection
-        await client.connect()
-    except Exception as e:
-        logging.error(f"{logPrefix} cannot connect to redis {e}")
-        client = None
-
-    # Ping the connection first
-    try:
-        await client.send('PING')
-    except Exception as e:
-        logging.error(f"{logPrefix} cannot ping redis {e}")
-        client = None
-
     streamExists = False
-    streamLength = 0
+    redisHost = client.host
+    clientId = -1
 
     if client:
         # query the stream size
         try:
             streamExists = await client.send('EXISTS', stream)
-            if streamExists:
-                results = await client.send('XINFO', 'STREAM', stream)
-                streamLength = results[1]
+            clientId = await client.send('CLIENT', 'ID', key=stream)
+            redisHost = await getHostForKey(client, stream)
         except Exception as e:
             logging.error(f"{logPrefix} cannot retreive stream metadata: {e}")
             client = None
 
+    initInfo = {
+        'success': client is not None,
+        'redis_node': redisHost,
+        'redis_client_id': clientId,
+        'stream_exists': streamExists,
+    }
+
     try:
-        await messageHandler.on_init(client, streamExists, streamLength)
+        await messageHandler.on_init(initInfo)
     except Exception as e:
         logging.error(f'{logPrefix} cannot initialize message handler: {e}')
         client = None
