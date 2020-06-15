@@ -48,7 +48,7 @@ async def coro():
     replicas = 1
     manual = True
 
-    task = asyncio.ensure_future(
+    runClusterTask = asyncio.ensure_future(
         runNewCluster(root, startPort, size, redisPassword, redisUser, replicas, manual)
     )
 
@@ -125,6 +125,9 @@ async def coro():
 
     task.cancel()
     await task
+
+    runClusterTask.cancel()
+    await runClusterTask
 
 
 def test_reshard():
