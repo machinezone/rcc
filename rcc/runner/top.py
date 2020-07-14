@@ -19,6 +19,7 @@ DEFAULT_STATS = [
     'instantaneous_input_kbps AS recv',
     'instantaneous_output_kbps AS sent',
     'instantaneous_ops_per_sec AS ops',
+    'total_commands_processed AS cmds',
 ]
 
 
