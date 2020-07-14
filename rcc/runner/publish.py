@@ -4,7 +4,10 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import asyncio
+import csv
+import logging
 import uuid
+import time
 from urllib.parse import urlparse
 
 import click
@@ -12,20 +15,57 @@ from rcc.client import RedisClient
 
 
 async def pub(
-    redisUrl, redisPassword, redisUser, channel, random_channel, msg, batch, maxLen
+    redisUrl,
+    redisPassword,
+    redisUser,
+    channel,
+    random_channel,
+    msg,
+    batch,
+    maxLen,
+    csvPath,
 ):
     client = RedisClient(redisUrl, redisPassword, redisUser)
     await client.connect()
 
     if batch:
-        while True:
-            chan = channel
-            if random_channel:
-                chan = str(uuid.uuid4())
+        if csvPath:
+            start = time.time()
 
-            streamId = await client.send(
-                'XADD', chan, 'MAXLEN', '~', maxLen, b'*', 'json', msg
+            publishedCount = 0
+            with open(csvPath) as csvfile:
+                reader = csv.reader(csvfile)
+                try:
+                    for row in reader:
+                        chan = row[0]
+                        count = int(row[1])
+                        publishedCount += count
+
+                        for i in range(count):
+                            streamId = await client.send(
+                                'XADD', chan, 'MAXLEN', '~', maxLen, b'*', 'json', msg
+                            )
+                except csv.Error as ex:
+                    logging.error(
+                        'error parsing csv file {}, line {}: {}'.format(
+                            csvPath, reader.line_num, ex
+                        )
+                    )
+                    return
+
+            secs = '%0.2f' % (time.time() - start)
+            click.secho(
+                f'published {publishedCount} events in {secs} seconds', bold=True
             )
+        else:
+            while True:
+                chan = channel
+                if random_channel:
+                    chan = str(uuid.uuid4())
+
+                streamId = await client.send(
+                    'XADD', chan, 'MAXLEN', '~', maxLen, b'*', 'json', msg
+                )
     else:
         streamId = await client.send(
             'XADD', channel, 'MAXLEN', '~', maxLen, b'*', 'json', msg
@@ -34,7 +74,9 @@ async def pub(
 
 
 @click.command()
-@click.option('--redis-url', '-u', default='redis://localhost')
+@click.option(
+    '--redis-url', '-u', envvar='RCC_REDIS_URL', default='redis://localhost:30001'
+)
 @click.option('--port', '-p')
 @click.option('--password', '-a')
 @click.option('--user')
@@ -43,8 +85,18 @@ async def pub(
 @click.option('--msg', default='{"bar": "baz"}')
 @click.option('--batch', is_flag=True)
 @click.option('--max_len', default='100')
+@click.option('--csv_path', envvar='RCC_PUBLISH_BATCH_CSV_FILE')
 def publish(
-    redis_url, port, password, user, channel, random_channel, msg, batch, max_len
+    redis_url,
+    port,
+    password,
+    user,
+    channel,
+    random_channel,
+    msg,
+    batch,
+    max_len,
+    csv_path,
 ):
     '''Publish (with XADD) to a channel
     '''
@@ -54,6 +106,19 @@ def publish(
         host, _, _ = netloc.partition(':')
         redis_url = f'redis://{host}:{port}'
 
-    asyncio.get_event_loop().run_until_complete(
-        pub(redis_url, password, user, channel, random_channel, msg, batch, max_len)
-    )
+    try:
+        asyncio.get_event_loop().run_until_complete(
+            pub(
+                redis_url,
+                password,
+                user,
+                channel,
+                random_channel,
+                msg,
+                batch,
+                max_len,
+                csv_path,
+            )
+        )
+    except Exception as e:
+        logging.error(f'cluster_nodes error: {e}')
