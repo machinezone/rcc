@@ -1,5 +1,5 @@
 # Build stage
-FROM python:3.8.2-alpine3.11 as build
+FROM python:3.8.3-alpine3.12 as build
 env PIP_DOWNLOAD_CACHE=/opt/pip_cache
 
 # Install build dependencies
@@ -11,10 +11,9 @@ COPY requirements.txt /tmp
 RUN pip install --cache-dir=/opt/pip_cache --user --requirement /tmp/requirements.txt
 
 # Runtime stage
-FROM python:3.8.2-alpine3.11 as runtime
+FROM python:3.8.3-alpine3.12 as runtime
 RUN addgroup -S app && adduser -S -G app app
-RUN apk add --no-cache libstdc++ curl ca-certificates zsh ws
-RUN apk add --no-cache redis
+RUN apk add --no-cache libstdc++ curl ca-certificates zsh ws redis
 
 COPY --chown=app:app --from=build /opt/pip_cache /opt/pip_cache
 
@@ -28,4 +27,4 @@ WORKDIR /home/app
 RUN pip install --cache-dir=/opt/pip_cache --user -e .
 
 EXPOSE 8765
-ENTRYPOINT ["rcc"]
+CMD ["rcc", "--help"]
