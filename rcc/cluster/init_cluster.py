@@ -188,6 +188,7 @@ async def waitForAllConnectionsToBeReady(urls, password, user, timeout: int):
 async def runNewCluster(
     root, startPort, size, password, user, replicas=1, manual=False
 ):
+    start = time.time()
     size = int(size)
 
     # FIXME: port range does not deal with redis-cluster-proxy
@@ -242,7 +243,8 @@ async def runNewCluster(
             print('Waiting for cluster to be consistent...')
             await asyncio.sleep(1)
 
-        click.secho('Cluster ready !', fg='green')
+        secs = '%0.2f' % (time.time() - start)
+        click.secho(f'Cluster ready in {secs} seconds !', fg='green')
         click.secho(f'Config files created in folder {root}', fg='cyan')
 
         with open(readyPath, 'w') as f:
