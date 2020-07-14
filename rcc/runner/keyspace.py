@@ -40,6 +40,7 @@ def keyspace(redis_urls, port, password, user, timeout, path, count, monitor, ma
     weights = keySpace.keys
     writeWeightsToCsv(weights, path)
 
+    # We use the max keys argument only for display on the console
     temp = [(weight, key) for key, weight in keySpace.keys.items()]
     temp.sort()
     temp.reverse()
