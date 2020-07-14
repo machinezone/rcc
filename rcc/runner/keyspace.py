@@ -4,6 +4,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import asyncio
+import logging
 import click
 
 from rcc.cluster.keyspace_analyzer import analyzeKeyspace, writeWeightsToCsv
@@ -32,22 +33,25 @@ from rcc.plot import asciiPlot
 def keyspace(redis_urls, port, password, user, timeout, path, count, monitor, max_keys):
     '''Analyze the redis keyspace'''
 
-    keySpace = asyncio.get_event_loop().run_until_complete(
-        analyzeKeyspace(
-            redis_urls, password, user, timeout, count=count, monitor=monitor
+    try:
+        keySpace = asyncio.get_event_loop().run_until_complete(
+            analyzeKeyspace(
+                redis_urls, password, user, timeout, count=count, monitor=monitor
+            )
         )
-    )
-    weights = keySpace.keys
-    writeWeightsToCsv(weights, path)
+        weights = keySpace.keys
+        writeWeightsToCsv(weights, path)
 
-    # We use the max keys argument only for display on the console
-    temp = [(weight, key) for key, weight in keySpace.keys.items()]
-    temp.sort()
-    temp.reverse()
-    temp = temp[:max_keys]
-    keys = {v: k for k, v in temp}
+        # We use the max keys argument only for display on the console
+        temp = [(weight, key) for key, weight in keySpace.keys.items()]
+        temp.sort()
+        temp.reverse()
+        temp = temp[:max_keys]
+        keys = {v: k for k, v in temp}
 
-    print()
-    asciiPlot(f'Top {max_keys} keys', keys)
-    asciiPlot('Commands', keySpace.commands)
-    asciiPlot('Nodes', keySpace.nodes)
+        print()
+        asciiPlot(f'Top {max_keys} keys', keys)
+        asciiPlot('Commands', keySpace.commands)
+        asciiPlot('Nodes', keySpace.nodes)
+    except Exception as e:
+        logging.error(f'cli error: {e}')
