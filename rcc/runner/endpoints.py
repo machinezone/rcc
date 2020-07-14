@@ -3,8 +3,10 @@
 Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
+import logging
 import os
 import json
+import tempfile
 
 import click
 import tabulate
@@ -15,8 +17,20 @@ def getEndpointsIps(service):
     kubectl get endpoints -o json redis-cluster
     '''
 
-    content = os.popen(f'kubectl get endpoints -o json {service}').read()
-    data = json.loads(content)
+    with tempfile.NamedTemporaryFile() as f:
+        path = f.name
+        ret = os.system(f'kubectl get endpoints -o json {service} > {path}')
+        if ret != 0:
+            return []
+
+        f.flush()
+        content = f.read()
+
+    try:
+        data = json.loads(content)
+    except Exception as e:
+        logging.error(f'error parsing json {e}')
+        return []
 
     assert len(data['subsets']) == 1
     assert 'addresses' in data['subsets'][0]
