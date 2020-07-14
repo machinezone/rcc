@@ -21,11 +21,13 @@ from rcc.cluster.init_cluster import runNewCluster
 @click.option('--start_port', default=30001, type=int)
 @click.option('--password', '-a')
 @click.option('--user')
-@click.option('--manual', '-m', is_flag=True)
-def make_cluster(size, start_port, password, user, replicas, manual):
+@click.option('--use_redis_cli', '-c', is_flag=True)
+def make_cluster(size, start_port, password, user, replicas, use_redis_cli):
     '''Create, initialize and run a redis cluster
     and a redis cluster proxy'''
     root = tempfile.mkdtemp()
+
+    manual = not use_redis_cli
 
     try:
         asyncio.get_event_loop().run_until_complete(
