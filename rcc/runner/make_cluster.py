@@ -5,6 +5,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 
 import asyncio
 import logging
+import shutil
 import tempfile
 
 import click
@@ -12,9 +13,6 @@ import click
 from rcc.cluster.init_cluster import runNewCluster
 
 
-#
-# FIXME: need option to set the number of replicas
-#
 @click.command()
 @click.option('--size', default=3, type=int)
 @click.option('--replicas', default=1, type=int)
@@ -35,3 +33,5 @@ def make_cluster(size, start_port, password, user, replicas, use_redis_cli):
         )
     except Exception as e:
         logging.error(f'cluster_nodes error: {e}')
+    finally:
+        shutil.rmtree(root)
