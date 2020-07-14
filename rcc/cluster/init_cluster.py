@@ -202,6 +202,10 @@ async def runNewCluster(
     click.secho('2/6 Check that ports are opened', bold=True)
     await checkOpenedPort(portRange, timeout=10)
 
+    if hasExecutable('redis-cluster-proxy'):
+        click.secho('Check redis-cluster-proxy port', bold=True)
+        await checkOpenedPort([max(portRange) + 1], timeout=10)
+
     try:
         click.secho(f'3/6 Configuring and running', bold=True)
         task = asyncio.ensure_future(runServer(root, startPort))
