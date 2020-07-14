@@ -74,7 +74,6 @@ clean:
 #
 # Docker
 #
-DOCKER_REPO := docker.pkg.github.com/machinezone/rcc
 NAME        := ${DOCKER_REPO}/rcc
 TAG         := $(shell python tools/compute_version_from_git.py)
 IMG         := ${NAME}:${TAG}
