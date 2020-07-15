@@ -51,6 +51,8 @@ class Connection(object):
             self.pubSubEvent = None
 
     async def connect(self):
+        logging.debug(f'Connecting to {self.host}:{self.port}...')
+
         self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
 
         # disable nagle algorithm
