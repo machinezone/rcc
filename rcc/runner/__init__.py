@@ -9,8 +9,12 @@ import logging
 from pkgutil import walk_packages
 
 import click
-import uvloop
 import coloredlogs
+
+try:
+    import uvloop
+except ImportError:
+    pass
 
 LOGGING_FORMAT = '%(asctime)s %(levelname)s %(message)s'
 coloredlogs.install(level='WARNING', fmt=LOGGING_FORMAT)
