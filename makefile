@@ -86,7 +86,7 @@ docker_tag:
 	docker push ${IMG}
 
 docker: update_version
-	git clean -dfx -e venv -e cobras.egg-info/ -e DOCKER_VERSION
+	git clean -dfx -e venv -e rcc.egg-info/ -e DOCKER_VERSION
 	docker build -t ${IMG} .
 	docker tag ${IMG} ${BUILD}
 	docker tag ${IMG} ${PROD}
