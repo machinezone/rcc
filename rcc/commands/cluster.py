@@ -24,7 +24,7 @@ ClusterNode = collections.namedtuple(
 
 
 class ClusterCommandsMixin:
-    async def cluster_nodes(self):
+    async def cluster_nodes(self, skipFailedNodes=True):
         response = await self.send('CLUSTER', 'NODES')
 
         # ERR This instance has cluster support disabled'
@@ -45,6 +45,9 @@ class ClusterCommandsMixin:
 
             role = tokens[2]
             flags = role
+
+            if skipFailedNodes and 'fail' in flags:
+                continue
 
             if 'master' in role:
                 role = 'master'
