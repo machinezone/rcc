@@ -201,7 +201,7 @@ async def binPackingReshardCoroutine(
     logging.info('Verify that the cluster is in a good state')
     ok = await clusterCheck(redisUrls, redisPassword, redisUser)
     if not ok:
-        raise ValueError('Cluster is not consistent')
+        raise ValueError('Cluster is not consistent. Run rcc cluster-check.')
 
     redisClient = RedisClient(redisUrls, redisPassword, redisUser)
     nodes = await redisClient.cluster_nodes()

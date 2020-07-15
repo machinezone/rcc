@@ -20,7 +20,7 @@ async def checkCluster(redisUrl, redisPassword, redisUser):
     if ok:
         click.secho('cluster ok', fg='green')
     else:
-        click.secho('cluster unhealthy. Re-run with -v', fg='red')
+        click.secho('cluster unhealthy. Re-run with -v or -v -v.', fg='red')
 
 
 @click.command()
