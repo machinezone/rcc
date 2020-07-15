@@ -68,16 +68,32 @@ def getSlotsRange(slots):
     return ' '.join(res)
 
 
-async def printRedisClusterInfoCoro(redisUrl, redisPassword, redisUser, role=None):
+async def printRedisClusterInfoCoro(
+    redisUrl, redisPassword, redisUser, role=None, displaySlots=True
+):
     redisClient = RedisClient(redisUrl, redisPassword, redisUser)
     nodes = await redisClient.cluster_nodes()
+
+    # build slave/master table
+    replicas = collections.defaultdict(list)
+    for node in nodes:
+        if node.role == 'slave':
+            replicas[node.replicaof].append(node.node_id)
 
     for node in nodes:
         if role is not None and node.role != role:
             continue
 
         slotRange = getSlotsRange(node.slots)
-        print(node.node_id, node.ip + ':' + node.port, node.role, slotRange)
+        info = [node.node_id, node.ip + ':' + node.port, node.role]
+        if node.role == 'master':
+            replicaCount = len(replicas.get(node.node_id, []))
+            info.append(f'#replicas {replicaCount}')
+
+            if displaySlots:
+                info.append(slotRange)
+
+        print(*info)
 
 
 async def getClusterSignature(redisUrl, redisPassword, redisUser):

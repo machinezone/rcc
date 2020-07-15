@@ -17,12 +17,15 @@ from rcc.cluster.info import printRedisClusterInfoCoro
 @click.option('--password', '-a')
 @click.option('--user')
 @click.option('--role')
-def cluster_nodes(redis_url, password, user, role):
+@click.option('--hide_slots', is_flag=True)
+def cluster_nodes(redis_url, password, user, role, hide_slots):
     '''Display cluster nodes'''
+
+    displaySlots = not hide_slots
 
     try:
         asyncio.get_event_loop().run_until_complete(
-            printRedisClusterInfoCoro(redis_url, password, user, role)
+            printRedisClusterInfoCoro(redis_url, password, user, role, displaySlots)
         )
     except Exception as e:
         logging.error(f'cluster_nodes error: {e}')

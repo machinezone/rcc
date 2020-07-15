@@ -19,6 +19,7 @@ ClusterNode = collections.namedtuple(
         'slots',
         'importing_slots',
         'migrating_slots',
+        'replicaof',
     ],
 )
 
@@ -75,6 +76,10 @@ class ClusterCommandsMixin:
                 else:
                     slots.append(int(token))
 
+            replicaof = 'na'
+            if role == 'slave':
+                replicaof = tokens[3]
+
             nodes.append(
                 ClusterNode(
                     node_id,
@@ -86,6 +91,7 @@ class ClusterCommandsMixin:
                     slots,
                     importing_slots,
                     migrating_slots,
+                    replicaof,
                 )
             )
 
