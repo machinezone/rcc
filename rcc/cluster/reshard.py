@@ -93,10 +93,11 @@ async def migrateSlot(
         batchSize = 100
         keys = await sourceClient.send('CLUSTER', 'GETKEYSINSLOT', slot, batchSize)
 
-        if len(keys) == 0:
+        keysCount = len(keys)
+        if keysCount == 0:
             break
 
-        logging.info('migrating', len(keys), 'keys')
+        logging.info(f'migrating {keysCount} keys')
         host = destinationNode.ip
         port = destinationNode.port
         db = 0
