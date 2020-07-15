@@ -198,6 +198,11 @@ def computeSlotsAssignmentFromWeights(weights, binCount):
 async def binPackingReshardCoroutine(
     redisUrls, redisPassword, redisUser, weights, timeout, dry=False, nodeId=None
 ):
+    logging.info('Verify that the cluster is in a good state')
+    ok = await clusterCheck(redisUrls, redisPassword, redisUser)
+    if not ok:
+        raise ValueError('Cluster is not consistent')
+
     redisClient = RedisClient(redisUrls, redisPassword, redisUser)
     nodes = await redisClient.cluster_nodes()
 
