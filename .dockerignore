@@ -10,3 +10,4 @@ Procfile
 __pycache__
 makefile
 .mypy_cache
+rcc.egg-info/
