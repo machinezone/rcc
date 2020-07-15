@@ -15,6 +15,7 @@ ClusterNode = collections.namedtuple(
         'ip',
         'port',
         'role',
+        'flags',
         'slots',
         'importing_slots',
         'migrating_slots',
@@ -43,8 +44,12 @@ class ClusterCommandsMixin:
             ip, _, port = url.partition(':')
 
             role = tokens[2]
-            role = role.replace('myself,', '')
-            role = role.replace('myself,', '')
+            flags = role
+
+            if 'master' in role:
+                role = 'master'
+            elif 'slave' in role:
+                role = 'slave'
 
             slots = []
             migrating_slots = []
@@ -74,6 +79,7 @@ class ClusterCommandsMixin:
                     ip,
                     port,
                     role,
+                    flags,
                     slots,
                     importing_slots,
                     migrating_slots,
