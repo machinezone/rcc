@@ -132,7 +132,7 @@ async def getClusterUrls(redisUrl, redisPassword, redisUser):
     return urls
 
 
-async def getClusterNodeCount(redisUrl, redisPassword, redisUser):
+async def getClusterNodesCount(redisUrl, redisPassword, redisUser):
     redisClient = RedisClient(redisUrl, redisPassword, redisUser)
     nodes = await redisClient.cluster_nodes()
     return len(nodes)

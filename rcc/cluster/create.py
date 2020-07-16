@@ -12,7 +12,7 @@ import time
 import click
 
 from rcc.client import RedisClient
-from rcc.cluster.info import getClusterNodeCount
+from rcc.cluster.info import getClusterNodesCount
 
 
 SLOTS = 16384  # Total number of slots
@@ -126,7 +126,7 @@ async def createCluster(args):
 
     for nodeAddress in nodes:
         redisUrl = f'redis://{nodeAddress}'
-        nodeCount = await getClusterNodeCount(redisUrl, args.password, args.user)
+        nodeCount = await getClusterNodesCount(redisUrl, args.password, args.user)
         if nodeCount != args.shards:
             await asyncio.sleep(0.1)
             sys.stderr.write('.')
