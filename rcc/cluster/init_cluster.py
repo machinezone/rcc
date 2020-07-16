@@ -140,17 +140,17 @@ async def checkOpenedPort(portRange, timeout: int):
                 sys.stderr.write('\n')
                 raise ValueError(f'Timeout trying to check opened ports {portRange}')
 
-            # FIXME there's probably a more portable thing that using nc ;
-            #       the timeout option (-w 1) is not portable
-            cmd = f'nc -vz -w 1 localhost {port} 2> /dev/null'
-            ret = os.system(cmd)
-
-            if ret == 0:
+            writer = None
+            try:
+                _, writer = await asyncio.open_connection('localhost', port)
                 # if we can connect it's not good, wait a bit, or
                 # we could straight out error out
                 await asyncio.sleep(0.1)
-            else:
+            except Exception:
                 break
+            finally:
+                if writer is not None:
+                    writer.close()
 
     sys.stderr.write('\n')
 
