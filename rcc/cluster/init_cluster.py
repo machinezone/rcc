@@ -136,7 +136,7 @@ def makeServerConfig(
     return args
 
 
-async def runServer(root, startPort):
+async def runServer(root):
     try:
         honcho = os.path.join(os.path.dirname(sys.executable), 'honcho')
         proc = await asyncio.create_subprocess_shell(f'{honcho} start', cwd=root)
@@ -235,7 +235,7 @@ async def runNewCluster(
 
     try:
         click.secho(f'3/6 Configuring and running', bold=True)
-        task = asyncio.ensure_future(runServer(root, startPort))
+        task = asyncio.ensure_future(runServer(root))
 
         # Check that all connections are ready
         click.secho(f'4/6 Wait for the cluster nodes to be running', bold=True)
