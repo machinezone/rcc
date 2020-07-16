@@ -1,6 +1,9 @@
 name: unittest
 
-on: [push]
+on:
+  push:
+    paths-ignore:
+    - 'docs/**'
 
 jobs:
   build:
