@@ -45,4 +45,4 @@ jobs:
         echo "0.0.1" > DOCKER_VERSION
         pip install -e .
         pip install "file://`pwd`#egg=rcc[dev]"
-        py.test -sv --timeout=60 -n 1 --disable-warnings tests/*.py
+        py.test -sv --timeout=60 --disable-warnings tests/*.py
