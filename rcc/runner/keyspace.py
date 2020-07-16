@@ -5,6 +5,8 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 
 import asyncio
 import logging
+import traceback
+
 import click
 
 from rcc.cluster.keyspace_analyzer import analyzeKeyspace, writeWeightsToCsv
@@ -54,4 +56,6 @@ def keyspace(redis_urls, port, password, user, timeout, path, count, monitor, ma
         asciiPlot('Commands', keySpace.commands)
         asciiPlot('Nodes', keySpace.nodes)
     except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'traceback: {backtrace}')
         logging.error(f'cli error: {e}')

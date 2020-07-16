@@ -7,6 +7,7 @@ import logging
 import os
 import json
 import tempfile
+import traceback
 
 import click
 import tabulate
@@ -80,4 +81,9 @@ def printRedisClusterInitCommand(service, port):
 def endpoints(service, port, full):
     '''Print endpoints associated with a redis cluster service'''
 
-    printEndpoints(service, port, full)
+    try:
+        printEndpoints(service, port, full)
+    except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'traceback: {backtrace}')
+        logging.error(f'endpoints error: {e}')

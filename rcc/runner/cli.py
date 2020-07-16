@@ -10,6 +10,7 @@ redis-cli -p 10000 CLUSTER SETSLOT 12182 IMPORTING 7f54416a684564483e83cdfef975d
 
 import asyncio
 import logging
+import traceback
 from urllib.parse import urlparse
 
 import click
@@ -68,4 +69,6 @@ def cli(redis_url, port, password, user, args):
             interpreter(redis_url, password, user, args)
         )
     except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'traceback: {backtrace}')
         logging.error(f'cli error: {e}')

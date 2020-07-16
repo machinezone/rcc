@@ -5,6 +5,8 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 import click
 import json
 import os
+import logging
+import traceback
 
 
 def getEndpointsIps(service):
@@ -46,4 +48,9 @@ def printRedisClusterInitCommand(service, port):
 def cluster_init(service, port):
     '''Print a cluster init command for redis url defined in a kubernete endpoints'''
 
-    printRedisClusterInitCommand(service, port)
+    try:
+        printRedisClusterInitCommand(service, port)
+    except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'traceback: {backtrace}')
+        logging.error(f'cluster-init error: {e}')

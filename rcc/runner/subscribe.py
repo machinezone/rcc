@@ -3,6 +3,9 @@
 Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
+import logging
+import traceback
+
 import click
 from rcc.client import RedisClient
 from rcc.subscriber import RedisSubscriberMessageHandlerClass, runSubscriber
@@ -69,4 +72,10 @@ def subscribe(redis_url, password, user, channel, position):
     '''Subscribe (with XREAD) to a channel'''
 
     redisClient = RedisClient(redis_url, password, user)
-    runSubscriber(redisClient, channel, position, MessageHandlerClass)
+
+    try:
+        runSubscriber(redisClient, channel, position, MessageHandlerClass)
+    except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'traceback: {backtrace}')
+        logging.error(f'subcribe error: {e}')

@@ -8,6 +8,7 @@ import csv
 import logging
 import uuid
 import time
+import traceback
 from urllib.parse import urlparse
 
 import click
@@ -121,4 +122,6 @@ def publish(
             )
         )
     except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'traceback: {backtrace}')
         logging.error(f'cluster_nodes error: {e}')

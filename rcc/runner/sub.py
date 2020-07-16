@@ -4,6 +4,9 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import asyncio
+import logging
+import traceback
+
 import click
 from rcc.client import RedisClient
 
@@ -48,6 +51,11 @@ def sub(redis_url, password, user, channel, pattern, timeout):
 
     redisClient = RedisClient(redis_url, password, user)
 
-    asyncio.get_event_loop().run_until_complete(
-        subscriber(redisClient, channel, pattern, timeout)
-    )
+    try:
+        asyncio.get_event_loop().run_until_complete(
+            subscriber(redisClient, channel, pattern, timeout)
+        )
+    except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'traceback: {backtrace}')
+        logging.error(f'sub error: {e}')

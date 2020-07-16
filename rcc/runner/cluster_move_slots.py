@@ -5,6 +5,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 
 import asyncio
 import logging
+import traceback
 
 import click
 
@@ -34,4 +35,6 @@ def cluster_move_slots(
             )
         )
     except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'traceback: {backtrace}')
         logging.error(f'cluster-move-slots error: {e}')

@@ -4,6 +4,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 import asyncio
 import logging
+import traceback
 
 import click
 
@@ -41,4 +42,6 @@ def cluster_slots(redis_url, password, user, slot, details):
             clusterSlotInfo(redisClient, slot, details)
         )
     except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'traceback: {backtrace}')
         logging.error(f'cluster_nodes error: {e}')

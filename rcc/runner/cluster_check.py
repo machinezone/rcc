@@ -4,6 +4,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 import asyncio
 import logging
+import traceback
 
 import click
 
@@ -38,4 +39,6 @@ def cluster_check(redis_url, password, user):
             checkCluster(redis_url, password, user)
         )
     except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'cluster_nodes traceback: {backtrace}')
         logging.error(f'cluster-check error: {e}')

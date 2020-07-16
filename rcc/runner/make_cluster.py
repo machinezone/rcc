@@ -7,6 +7,7 @@ import asyncio
 import logging
 import shutil
 import tempfile
+import traceback
 
 import click
 
@@ -32,6 +33,8 @@ def make_cluster(size, start_port, password, user, replicas, use_redis_cli):
             runNewCluster(root, start_port, size, password, user, replicas, manual)
         )
     except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'cluster_nodes traceback: {backtrace}')
         logging.error(f'cluster_nodes error: {e}')
     finally:
         shutil.rmtree(root)

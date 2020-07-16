@@ -5,6 +5,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 
 import asyncio
 import logging
+import traceback
 
 import click
 
@@ -51,4 +52,6 @@ def migrate(src_addr, dst_addr, password, user, slot, dry):
             runMigration(src_addr, dst_addr, password, user, slot, dry)
         )
     except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'traceback: {backtrace}')
         logging.error(f'migrate error: {e}')

@@ -4,6 +4,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 import asyncio
 import logging
+import traceback
 
 import click
 import tabulate
@@ -91,4 +92,6 @@ def top(redis_url, password, user, stats, role):
                 printRedisClusterInfoCoro(redis_url, password, user, stats, role)
             )
         except Exception as e:
-            logging.error(f'cli error: {e}')
+            backtrace = traceback.format_exc()
+            logging.debug(f'traceback: {backtrace}')
+            logging.error(f'top error: {e}')

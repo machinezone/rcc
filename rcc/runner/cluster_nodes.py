@@ -4,6 +4,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 import asyncio
 import logging
+import traceback
 
 import click
 
@@ -28,4 +29,6 @@ def cluster_nodes(redis_url, password, user, role, hide_slots):
             printRedisClusterInfoCoro(redis_url, password, user, role, displaySlots)
         )
     except Exception as e:
+        backtrace = traceback.format_exc()
+        logging.debug(f'traceback: {backtrace}')
         logging.error(f'cluster_nodes error: {e}')
