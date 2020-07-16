@@ -20,7 +20,7 @@ from test_utils import makeClient
 async def coro():
     root = tempfile.mkdtemp()
     clusterReadyFile = os.path.join(root, 'redis_cluster_ready')
-    startPort = 13000
+    startPort = 0
     redisUrl = f'redis://localhost:{startPort}'
 
     redisPassword = 'foobar'

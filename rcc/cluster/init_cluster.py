@@ -8,8 +8,6 @@ import os
 import sys
 import time
 import logging
-import socket
-import distutils.spawn
 
 import click
 
@@ -18,43 +16,27 @@ from rcc.cluster.info import clusterCheck
 from rcc.client import RedisClient
 
 
-def findFreePort(
-    interface='127.0.0.1', socket_family=socket.AF_INET, socket_type=socket.SOCK_STREAM
-):
-    """
-    Ask the platform to allocate a free port on the specified interface, then
-    release the socket and return the address which was allocated.
+async def findFreePorts(count):
+    ports = []
 
-    Copied from ``twisted.internet.test.connectionmixins.findFreePort``.
+    for port in range(5000, 50000):
+        writer = None
+        try:
+            _, writer = await asyncio.open_connection('localhost', port)
+            # if we can connect it's not good
+        except Exception:
+            ports.append(port)
+            if len(ports) == count:
+                return ports
+        finally:
+            if writer is not None:
+                writer.close()
 
-    :param bytes interface: The local address to try to bind the port on.
-    :param int socket_family: The socket family of port.
-    :param int socket_type: The socket type of the port.
-
-    :return: A two-tuple of address and port, like that returned by
-        ``socket.getsockname``.
-    """
-    address = socket.getaddrinfo(interface, 0)[0][4]
-    probe = socket.socket(socket_family, socket_type)
-    try:
-        probe.bind(address)
-        return probe.getsockname()
-    finally:
-        probe.close()
-
-
-def hasExecutable(program):
-    return distutils.spawn.find_executable(program)
+    raise ValueError('Cannot find a free port')
 
 
 def makeServerConfig(
-    root,
-    readyPath,
-    startPort=11000,
-    masterNodeCount=3,
-    password=None,
-    user=None,
-    replicas=1,
+    root, readyPath, portRange, masterNodeCount, password, user, replicas
 ):
     # create config files
     nodeCount = masterNodeCount * (1 + replicas)
@@ -78,7 +60,7 @@ def makeServerConfig(
                 f.write(f'requirepass {password}' + '\n')
                 f.write(f'masterauth {password}' + '\n')
 
-    ips = ' '.join(['127.0.0.1:' + str(startPort + i) for i in range(nodeCount)])
+    ips = ' '.join([f'127.0.0.1:{port}' for port in portRange])
 
     # Create a Procfile
     # server1: redis-server server1.conf --protected-mode no ...
@@ -92,46 +74,13 @@ def makeServerConfig(
 
     procfile = os.path.join(root, 'Procfile')
     with open(procfile, 'w') as f:
-        for i in range(nodeCount):
-            port = startPort + i
+        for i, port in enumerate(portRange):
             f.write(f'server{i}: redis-server server{i}.conf ')
             f.write(f'--protected-mode no --cluster-enabled yes --port {port}\n')
 
-        if not hasExecutable('redis-cluster-proxy'):
-            logging.warning('****************************************')
-            logging.warning('* redis-cluster-proxy is not available *')
-            logging.warning('****************************************')
-        else:
-            #
-            # Use a simple shell expression to only start the proxy
-            # when the server is ready
-            # $ while test ! -f /tmp/bar ; do sleep 1 ; echo waiting ; done ; echo READY
-            # waiting
-            # waiting
-            # READY
-            #
-            # The 'ready file' will be created when the cluster is ready.
-            #
-            msg = 'waiting for cluster to be up to start proxy'
-            filename = os.path.basename(readyPath)
-            f.write('proxy: ')
-            f.write(
-                f'while test ! -f $ROOT/{filename}; do sleep 3; echo "{msg}"; done; '
-            )
-
-            auth = ''
-            if password:
-                auth += f'-a {password}'
-                if user:
-                    # Maybe redis-cluster-proxy should support a --user option instead
-                    # of --auth-user to be consistent with redis-cli
-                    auth += f' --auth-user {user}'
-
-            f.write(f'redis-cluster-proxy {auth} --port {port+1} {ips}')
-
     # Print cluster init command
     host = 'localhost'
-    port = startPort
+    port = portRange[0]
     args = ClusterCreateArgs(masterNodeCount, host, port, password, user, ips, replicas)
     return args
 
@@ -217,21 +166,21 @@ async def runNewCluster(
     start = time.time()
     size = int(size)
 
-    # FIXME: port range does not deal with redis-cluster-proxy
-    portRange = [port for port in range(startPort, startPort + (1 + replicas) * size)]
+    nodesCount = (1 + replicas) * size
+    if startPort == 0:
+        portRange = await findFreePorts(nodesCount)
+    else:
+        portRange = [port for port in range(startPort, startPort + nodesCount)]
+
     click.secho(f'1/6 Creating server config for range {portRange}', bold=True)
 
     readyPath = os.path.join(root, 'redis_cluster_ready')
     createArgs = makeServerConfig(
-        root, readyPath, startPort, size, password, user, replicas
+        root, readyPath, portRange, size, password, user, replicas
     )
 
     click.secho('2/6 Check that ports are opened', bold=True)
     await checkOpenedPort(portRange, timeout=10)
-
-    if hasExecutable('redis-cluster-proxy'):
-        click.secho('Check redis-cluster-proxy port', bold=True)
-        await checkOpenedPort([max(portRange) + 1], timeout=10)
 
     try:
         click.secho(f'3/6 Configuring and running', bold=True)
@@ -255,7 +204,7 @@ async def runNewCluster(
         # We just initialized the cluster, wait until it is 'consistent' and good to use
         click.secho(f'6/6 Wait for all cluster nodes to be consistent', bold=True)
 
-        redisUrl = f'redis://localhost:{startPort}'
+        redisUrl = f'redis://localhost:{portRange[0]}'
         while True:
             ret = False
             try:
