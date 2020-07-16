@@ -1,4 +1,4 @@
-# What
+# Moving Slots
 
 The `cluster-move-slots` is a new command which emulates what `redis-cli reshard` does. It moves slots around your cluster, and is very explicit:
 
