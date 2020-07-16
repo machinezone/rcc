@@ -95,8 +95,8 @@ class ClusterCommandsMixin:
                 )
             )
 
-        nodes = [(f'{node.ip}:{node.port}', node) for node in nodes]
+        nodes = [(node.role, f'{node.ip}:{node.port}', node) for node in nodes]
         nodes.sort()
-        nodes = [item[1] for item in nodes]
+        nodes = [item[2] for item in nodes]
 
         return nodes
