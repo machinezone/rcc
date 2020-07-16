@@ -92,6 +92,8 @@ async def printRedisClusterInfoCoro(
 
             if displaySlots:
                 info.append(slotRange)
+        elif node.role == 'slave':
+            info.append(f'replicates {node.replicaof}')
 
         print(*info)
 
