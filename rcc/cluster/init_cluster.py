@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import logging
+import socket
 import distutils.spawn
 
 import click
@@ -15,6 +16,31 @@ import click
 from rcc.cluster.create import ClusterCreateArgs, makeCreateCmd, createCluster
 from rcc.cluster.info import clusterCheck
 from rcc.client import RedisClient
+
+
+def findFreePort(
+    interface='127.0.0.1', socket_family=socket.AF_INET, socket_type=socket.SOCK_STREAM
+):
+    """
+    Ask the platform to allocate a free port on the specified interface, then
+    release the socket and return the address which was allocated.
+
+    Copied from ``twisted.internet.test.connectionmixins.findFreePort``.
+
+    :param bytes interface: The local address to try to bind the port on.
+    :param int socket_family: The socket family of port.
+    :param int socket_type: The socket type of the port.
+
+    :return: A two-tuple of address and port, like that returned by
+        ``socket.getsockname``.
+    """
+    address = socket.getaddrinfo(interface, 0)[0][4]
+    probe = socket.socket(socket_family, socket_type)
+    try:
+        probe.bind(address)
+        return probe.getsockname()
+    finally:
+        probe.close()
 
 
 def hasExecutable(program):
