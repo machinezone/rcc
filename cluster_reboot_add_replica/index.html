@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Handling a failover - rcc</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">rcc</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href=".." class="nav-link">General</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../CHANGELOG/" class="nav-link">Changelog</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../binpacking/" class="nav-link">Binpacking</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../cluster_ips/" class="nav-link">Cluster Ips</a>
+                            </li>
+                            <li class="navitem active">
+                                <a href="./" class="nav-link">Handling a failover</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../cluster_testbed/" class="nav-link">Cluster test bed</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../moving_slots/" class="nav-link">What</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../resharding/" class="nav-link">Resharding</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../cluster_ips/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../cluster_testbed/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#handling-a-failover" class="nav-link">Handling a failover</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#problem" class="nav-link">Problem</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#solution" class="nav-link">Solution</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="handling-a-failover">Handling a failover</h1>
+<h2 id="problem">Problem</h2>
+<p>If a redis master dies and gets restarted by kubernete (or OpenShift), Redis Cluster will have a slave/replica take over, and keep the cluster running. However once this is done one need to get a new redis node to become a slave/replica of the newly elected master node. With the default settings, kubernete will create a new pod, running in cluster mode but unknown to the rest of the cluster yet.</p>
+<p>Once a machine has been rebooted and its old ip and node id disappear, the cluster will treat it as a failed instance. However rcc was not detecting it, and all the basic rcc sub-commands were hanging, as they were trying to connect to a dead ip. The first change to improve this was to add more verbosity when connecting.</p>
+<p>The rcc code was updated to properly detect nodes that were in fail node when parsing the CLUSTER NODES response, and skip them. A companion change was made to display the number of replica for each master, so that we know which master needs to be replicated.</p>
+<h2 id="solution">Solution</h2>
+<p>This is how I create a temporary container to operate our cluster.</p>
+<pre><code>kubectl run rcc --rm -i --tty --limits cpu=1000m,memory=1024Mi --image ${DOCKER_REPO}/rcc:0.9.116 -- zsh
+</code></pre>
+
+<p>Listing all the nodes in the cluster:</p>
+<pre><code>~$ rcc cluster-nodes -u redis://172.25.184.208:6379 --hide_slots
+d5e0a2987b9438b349450982b392d76f3781cf91 172.25.145.131:6379 master #replicas 1
+1aba1453889d04119cc4b24d70ced2e3508c123f 172.25.184.208:6379 master #replicas 1
+7dc543bac7b96c0bc7533c35b0c7eac0274f2e0a 172.25.241.48:6379 master #replicas 1
+0d27e89197064a1f734ca39abe360dea21c52147 172.26.163.65:6379 master #replicas 1
+74a640e695a0b48c1dc1b42826f69bb634c33cbd 172.26.165.191:6379 master #replicas 1
+d305402271cef50e5982fd3510b7bead4ac952cc 172.26.199.115:6379 master #replicas 1
+45301cb2b3ffc3f661398eb1799b0b79077b5ef6 172.26.42.159:6379 master #replicas 1
+7c0179723d8747a7396cbf3d5003f88d4d1f8fcc 172.27.178.66:6379 master #replicas 1
+9760a389011e4ca332f30e03a2e000b3fe00be10 172.27.240.171:6379 slave
+3d0c99018c2df217f7b03e65a90063c91bef6e67 172.27.36.237:6379 master #replicas 0
+98f9145d666040e9a15ba75820bd0e5afb89bb5d 172.28.206.215:6379 slave
+7b4c6c0da2e9a37a0de26af2f01a8de2e3b45557 172.28.217.161:6379 slave
+8b48630b4494f68acb62feb2f80e460b9ea01d08 172.30.147.239:6379 slave
+e22392893cc584bbc6e9c42ca616136c5260c40c 172.30.215.25:6379 slave
+8b0dccdb4d2b683e721b48610696c23e7076982e 172.30.47.107:6379 slave
+7c30d9921bbc4f1d09dd6ed4c79c3744b44411a8 172.30.99.157:6379 slave
+43d9eae701179954aef517f784a0aef91f14fd81 172.31.231.162:6379 slave
+</code></pre>
+
+<p>Here we see that <em>172.27.36.237:6379</em> has 0 replicas, and needs one. Now we need to identify which pod is running the new redis instance which has not joined the cluster yet. We will use the <em>endpoints</em> sub-command of rcc to figure this out. That command expects that there is a default service named redis-cluster which run your cluster. That setup will be described separately. If you use another name there is an option to specify it. This is really just a tiny wrapper on top of kubernete.</p>
+<pre><code>$ rcc endpoints --full --service redis-cluster
+ip              name
+--------------  ---------------------
+172.25.145.131  redis-cluster-6-wmqn7
+172.25.184.208  redis-cluster-6-jp2mr
+172.25.241.48   redis-cluster-6-2pmb9
+172.26.163.65   redis-cluster-6-5zd27
+172.26.165.191  redis-cluster-6-k47kj
+172.26.199.115  redis-cluster-6-blsvd
+172.26.42.159   redis-cluster-6-sxb9n
+172.27.178.66   redis-cluster-6-sl76p
+172.27.240.171  redis-cluster-6-h6q97
+172.27.36.237   redis-cluster-6-8tz6g
+172.28.206.215  redis-cluster-6-p675h
+172.28.217.161  redis-cluster-6-457cq
+172.30.147.239  redis-cluster-6-s8g84
+172.30.215.25   redis-cluster-6-7rm4m
+172.30.47.107   redis-cluster-6-tmctq
+172.30.99.157   redis-cluster-6-cccx2
+172.31.182.46   redis-cluster-6-7s2gd  &lt;-- the new node, not found in CLUSTER NODES
+172.31.231.162  redis-cluster-6-vctz6
+</code></pre>
+
+<p>We need to eye-ball which redis instance is not part of the CLUSTER NODES response yet. In our case it is <em>172.31.182.46</em>, so we will have to remote connect to <em>redis-cluster-6-7s2gd</em> to configure the new node. This will be a 2 steps process for adding a new slave/replica.</p>
+<pre><code>oc rsh redis-cluster-6-7s2gd
+# redis-cli
+127.0.0.1:6379&gt; CLUSTER NODES
+4205c956cbb67e5155931c5dfa9377d903899226 :6379@16379 myself,master - 0 0 0 connected
+</code></pre>
+
+<p>The machine only know about itself at this point. We can have it join the cluster with <em>CLUSTER MEET</em>, which is the first thing to do.</p>
+<pre><code>127.0.0.1:6379&gt; CLUSTER MEET 172.27.36.237 6379
+OK
+127.0.0.1:6379&gt; CLUSTER NODES
+7c0179723d8747a7396cbf3d5003f88d4d1f8fcc 172.27.178.66:6379@16379 master - xxxx
+... now all the nodes are returned here
+</code></pre>
+
+<p>The second and final step is to have that machine act as a slave of the <em>orphaned</em> master, with the <em>CLUSTER REPLICATE</em> command.</p>
+<pre><code>127.0.0.1:6379&gt; CLUSTER REPLICATE 3d0c99018c2df217f7b03e65a90063c91bef6e67
+OK
+</code></pre>
+
+<p>Now we can display our cluster again with rcc, and notice that all master have a replica.</p>
+<pre><code>~$ rcc cluster-nodes -u redis://172.25.184.208:6379 --hide_slots
+d5e0a2987b9438b349450982b392d76f3781cf91 172.25.145.131:6379 master #replicas 1
+1aba1453889d04119cc4b24d70ced2e3508c123f 172.25.184.208:6379 master #replicas 1
+7dc543bac7b96c0bc7533c35b0c7eac0274f2e0a 172.25.241.48:6379 master #replicas 1
+0d27e89197064a1f734ca39abe360dea21c52147 172.26.163.65:6379 master #replicas 1
+74a640e695a0b48c1dc1b42826f69bb634c33cbd 172.26.165.191:6379 master #replicas 1
+d305402271cef50e5982fd3510b7bead4ac952cc 172.26.199.115:6379 master #replicas 1
+45301cb2b3ffc3f661398eb1799b0b79077b5ef6 172.26.42.159:6379 master #replicas 1
+7c0179723d8747a7396cbf3d5003f88d4d1f8fcc 172.27.178.66:6379 master #replicas 1
+9760a389011e4ca332f30e03a2e000b3fe00be10 172.27.240.171:6379 slave
+3d0c99018c2df217f7b03e65a90063c91bef6e67 172.27.36.237:6379 master #replicas 1
+98f9145d666040e9a15ba75820bd0e5afb89bb5d 172.28.206.215:6379 slave
+7b4c6c0da2e9a37a0de26af2f01a8de2e3b45557 172.28.217.161:6379 slave
+8b48630b4494f68acb62feb2f80e460b9ea01d08 172.30.147.239:6379 slave
+e22392893cc584bbc6e9c42ca616136c5260c40c 172.30.215.25:6379 slave
+8b0dccdb4d2b683e721b48610696c23e7076982e 172.30.47.107:6379 slave
+7c30d9921bbc4f1d09dd6ed4c79c3744b44411a8 172.30.99.157:6379 slave
+4205c956cbb67e5155931c5dfa9377d903899226 172.31.182.46:6379 slave
+43d9eae701179954aef517f784a0aef91f14fd81 172.31.231.162:6379 slave
+</code></pre>
+
+<p>What is missing at this point, is a rcc command to help the cluster to forget about the old failed node.</p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
