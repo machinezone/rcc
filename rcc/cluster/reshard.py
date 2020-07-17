@@ -29,7 +29,6 @@ from rcc.cluster.info import getSlotsToNodesMapping, clusterCheck
 import click
 
 
-# FIXME: make redisUser mandatory
 def makeClientfromNode(node, redisPassword, redisUser):
     url = f'redis://{node.ip}:{node.port}'
     return RedisClient(url, redisPassword, redisUser)
