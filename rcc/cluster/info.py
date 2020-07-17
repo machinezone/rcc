@@ -88,7 +88,17 @@ async def printRedisClusterInfoCoro(
         info = [node.node_id, node.ip + ':' + node.port, node.role]
         if node.role == 'master':
             replicaCount = len(replicas.get(node.node_id, []))
-            info.append(f'#replicas {replicaCount}')
+            slotCount = len(node.slots)
+
+            if replicaCount > 1:
+                info.append(f'{replicaCount} replicas')
+            else:
+                info.append(f'{replicaCount} replica')
+
+            if slotCount > 1:
+                info.append(f'{slotCount} slots')
+            else:
+                info.append(f'{slotCount} slot')
 
             if displaySlots:
                 info.append(slotRange)
