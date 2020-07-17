@@ -330,14 +330,25 @@ async def moveSlots(
                 if sourceNode.node_id == node.node_id:
                     logging.info(f'slot {slot} already placed correctly')
                 else:
-                    ret = await migrateSlot(
-                        masterClients,
-                        redisPassword,
-                        redisUser,
-                        slot,
-                        sourceNode,
-                        node,
-                        dry,
+                    #
+                    # when we migrate a slot, we use the asyncio.shield feature
+                    # so that cancelling the full process or event loop do not
+                    # cancel the slot migration and try to finish, otherwise
+                    # the cluster will be left in an odd state.
+                    # it is not bulletproof as the full process could be killed
+                    # but this cover common use case where one hit ctrl-c in the
+                    # middle of a reshard or cluster-move operation
+                    #
+                    ret = await asyncio.shield(
+                        migrateSlot(
+                            masterClients,
+                            redisPassword,
+                            redisUser,
+                            slot,
+                            sourceNode,
+                            node,
+                            dry,
+                        )
                     )
                     if not ret:
                         return False
