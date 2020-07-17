@@ -134,7 +134,7 @@ async def coro():
     # Do another reshard. This one should be a no-op
     # This should return statistics about the resharding
     ret = await binPackingReshardCoroutine(
-        redisUrl, redisPassword, redisUrl, weights, timeout=15
+        redisUrl, redisPassword, redisUrl, weights, timeout=20
     )
     assert ret
 
