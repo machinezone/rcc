@@ -242,7 +242,7 @@ async def moveSlotsReshardCoroutine(
     for node in nodes:
         if node.node_id in (sourceNodeId, targetNodeId):
             if node.role != 'master':
-                raise ValueError(f'Node {node.node_id} is not a master node')
+                raise ValueError(f'Node id {node.node_id} is not a master node')
 
             if node.node_id == sourceNodeId:
                 foundSource = True
@@ -250,9 +250,9 @@ async def moveSlotsReshardCoroutine(
                 foundTarget = True
 
     if not foundSource:
-        raise ValueError(f'Source node {sourceNodeId} is not in cluster')
+        raise ValueError(f'Source node id {sourceNodeId} is not in cluster')
     if not foundTarget:
-        raise ValueError(f'Target node {targetNodeId} is not in cluster')
+        raise ValueError(f'Target node id {targetNodeId} is not in cluster')
 
     # There will be as many bins as there are master nodes
     masterNodes = [node for node in nodes if node.role == 'master']
