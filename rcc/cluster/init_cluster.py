@@ -186,6 +186,30 @@ async def runNewCluster(
         click.secho(f'3/6 Configuring and running', bold=True)
         task = asyncio.ensure_future(runServer(root))
 
+        # This might help with timing issues on CI ... see below
+        await asyncio.sleep(0.5)
+
+        #
+        # ... waitForAllConnectionsToBeReady returns too early the last
+        # instance running on port 5005 is checked after we start creating
+        # the cluster ... ??
+        #
+        # 2020-07-17T00:23:16.2221860Z 4/6 Wait for the cluster nodes to be running
+        # 2020-07-17T00:23:16.5892240Z Checking redis://localhost:5000 ....
+        # 2020-07-17T00:23:16.5920290Z Checking redis://localhost:5001 .
+        # 2020-07-17T00:23:16.5948040Z Checking redis://localhost:5002 .
+        # 2020-07-17T00:23:16.5971910Z Checking redis://localhost:5003 .
+        # 2020-07-17T00:23:16.6003960Z Checking redis://localhost:5004 .
+        # 2020-07-17T00:23:16.6034590Z 5/6 Create the cluster
+        # 2020-07-17T00:23:16.6036360Z Performing hash slots allocation on 3 nodes...
+        # 2020-07-17T00:23:16.6656430Z Master[0] -> Slotes 0 - 5460
+        # 2020-07-17T00:23:16.6657070Z Master[1] -> Slotes 5461 - 10921
+        # 2020-07-17T00:23:16.6657540Z Master[2] -> Slotes 10922 - 16383
+        # 2020-07-17T00:23:16.6657670Z >>> Assign a different config epoch to each node
+        # 2020-07-17T00:23:16.7187930Z Sending CLUSTER MEET messages to join the cluster
+        # 2020-07-17T00:23:17.8346500Z Checking redis://localhost:5005 .
+        #
+
         # Check that all connections are ready
         click.secho(f'4/6 Wait for the cluster nodes to be running', bold=True)
         urls = [f'redis://localhost:{port}' for port in portRange]
