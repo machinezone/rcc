@@ -86,14 +86,18 @@ def makeServerConfig(
     return args
 
 
-async def runServer(root):
+async def runServer(root, serverIdx, port):
     try:
-        honcho = os.path.join(os.path.dirname(sys.executable), 'honcho')
-        proc = await asyncio.create_subprocess_shell(f'{honcho} start', cwd=root)
+        cmd = (
+            f'redis-server server{serverIdx}.conf '
+            + f'--protected-mode no --cluster-enabled yes --port {port}\n'
+        )
+
+        proc = await asyncio.create_subprocess_shell(cmd, cwd=root)
         stdout, stderr = await proc.communicate()
 
     except asyncio.CancelledError:
-        print('Cancelling honcho')
+        print(f'Cancelling server running on port {port}')
         proc.terminate()
 
 
@@ -184,7 +188,11 @@ async def runNewCluster(
 
     try:
         click.secho(f'3/6 Configuring and running', bold=True)
-        task = asyncio.ensure_future(runServer(root))
+
+        tasks = []
+        for i, port in enumerate(portRange):
+            task = asyncio.ensure_future(runServer(root, i, port))
+            tasks.append(task)
 
         # This might help with timing issues on CI ... see below
         await asyncio.sleep(0.5)
@@ -259,4 +267,5 @@ async def runNewCluster(
         print('Cancelling cluster')
 
     finally:
-        task.cancel()
+        for task in tasks:
+            task.cancel()
