@@ -4,6 +4,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import asyncio
+import json
 import os
 import sys
 import time
@@ -36,7 +37,7 @@ async def findFreePorts(count):
 
 
 def makeServerConfig(
-    root, readyPath, portRange, masterNodeCount, password, user, replicas
+    root, clusterReadyFile, portRange, masterNodeCount, password, user, replicas
 ):
     # create config files
     nodeCount = masterNodeCount * (1 + replicas)
@@ -161,7 +162,7 @@ async def waitForAllConnectionsToBeReady(urls, password, user, timeout: int):
 
 
 async def runNewCluster(
-    root, startPort, size, password, user, replicas=1, manual=False
+    root, clusterReadyFile, startPort, size, password, user, replicas=1, manual=False
 ):
     start = time.time()
     size = int(size)
@@ -174,9 +175,8 @@ async def runNewCluster(
 
     click.secho(f'1/6 Creating server config for range {portRange}', bold=True)
 
-    readyPath = os.path.join(root, 'redis_cluster_ready')
     createArgs = makeServerConfig(
-        root, readyPath, portRange, size, password, user, replicas
+        root, clusterReadyFile, portRange, size, password, user, replicas
     )
 
     click.secho('2/6 Check that ports are opened', bold=True)
@@ -222,8 +222,11 @@ async def runNewCluster(
         click.secho(f'Cluster ready in {secs} seconds !', fg='green')
         click.secho(f'Config files created in folder {root}', fg='cyan')
 
-        with open(readyPath, 'w') as f:
-            f.write('cluster ready')
+        # write into start port ... a bit ugly
+        startPort = portRange[0]
+
+        with open(clusterReadyFile, 'w') as f:
+            f.write(json.dumps({'start_port': portRange[0]}))
 
         while True:
             await asyncio.sleep(1)

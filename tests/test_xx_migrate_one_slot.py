@@ -5,6 +5,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import asyncio
+import json
 import os
 import tempfile
 
@@ -19,9 +20,8 @@ from test_utils import makeClient
 
 async def coro():
     root = tempfile.mkdtemp()
-    clusterReadyFile = os.path.join(root, 'redis_cluster_ready')
+    clusterReadyFile = os.path.join(root, 'redis_cluster_ready.json')
     startPort = 0
-    redisUrl = f'redis://localhost:{startPort}'
 
     redisPassword = 'foobar'
     redisUser = None
@@ -34,13 +34,27 @@ async def coro():
 
     size = 3
     task = asyncio.ensure_future(
-        runNewCluster(root, startPort, size, redisPassword, redisUser, replicas, manual)
+        runNewCluster(
+            root,
+            clusterReadyFile,
+            startPort,
+            size,
+            redisPassword,
+            redisUser,
+            replicas,
+            manual,
+        )
     )
 
     # Wait until cluster is initialized
     while not os.path.exists(clusterReadyFile):
         await asyncio.sleep(0.1)
 
+    with open(clusterReadyFile) as f:
+        data = json.loads(f.read())
+        startPort = data['start_port']
+
+    redisUrl = f'redis://localhost:{startPort}'
     client = makeClient(startPort, redisPassword, redisUser)
 
     # Write something in redis

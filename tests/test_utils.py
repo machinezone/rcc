@@ -4,6 +4,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
 
 import asyncio
+import coloredlogs
 from rcc.client import RedisClient
 
 
@@ -45,3 +46,8 @@ async def getSupportedCommands(client):
 async def isCommandSupported(client, cmd):
     commands = await getSupportedCommands(client)
     return cmd in commands
+
+
+def enableDebug():
+    LOGGING_FORMAT = '%(asctime)s %(levelname)s %(message)s'
+    coloredlogs.install(level='DEBUG', fmt=LOGGING_FORMAT)
