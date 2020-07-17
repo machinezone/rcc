@@ -44,4 +44,4 @@ def cluster_slots(redis_url, password, user, slot, details):
     except Exception as e:
         backtrace = traceback.format_exc()
         logging.debug(f'traceback: {backtrace}')
-        logging.error(f'cluster_nodes error: {e}')
+        logging.error(f'cluster_slots error: {e}')

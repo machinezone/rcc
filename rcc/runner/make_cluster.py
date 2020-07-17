@@ -45,7 +45,7 @@ def make_cluster(size, start_port, password, user, replicas, use_redis_cli):
         )
     except Exception as e:
         backtrace = traceback.format_exc()
-        logging.debug(f'cluster_nodes traceback: {backtrace}')
-        logging.error(f'cluster_nodes error: {e}')
+        logging.debug(f'traceback: {backtrace}')
+        logging.error(f'make-cluster error: {e}')
     finally:
         shutil.rmtree(root)

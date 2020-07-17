@@ -124,4 +124,4 @@ def publish(
     except Exception as e:
         backtrace = traceback.format_exc()
         logging.debug(f'traceback: {backtrace}')
-        logging.error(f'cluster_nodes error: {e}')
+        logging.error(f'publish error: {e}')
