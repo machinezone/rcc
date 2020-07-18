@@ -238,13 +238,15 @@ async def runNewCluster(
 
         redisUrl = f'redis://localhost:{portRange[0]}'
         while True:
-            ret = False
             try:
-                ret = await clusterCheck(redisUrl, password, user)
+                info = await clusterCheck(redisUrl, password, user)
             except Exception:
                 pass
 
-            if ret:
+            if info['success']:
+                if not info['all_balanced']:
+                    logging.warning('The cluster is not balanced.')
+                    logging.warning('Some master do not have a replica.')
                 break
 
             print('Waiting for cluster to be consistent...')

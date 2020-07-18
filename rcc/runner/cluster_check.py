@@ -13,12 +13,16 @@ from rcc.cluster.info import clusterCheck
 
 async def checkCluster(redisUrl, redisPassword, redisUser):
     try:
-        ok = await clusterCheck(redisUrl, redisPassword, redisUser)
+        info = await clusterCheck(redisUrl, redisPassword, redisUser)
     except Exception as e:
         logging.error(f'checkCluster error: {e}')
         return
 
-    if ok:
+    if not info['all_balanced']:
+        logging.warning('The cluster is not balanced.')
+        logging.warning('Some master do not have a replica.')
+
+    if info['success']:
         click.secho('cluster ok', fg='green')
     else:
         click.secho('cluster unhealthy. Re-run with -v or -v -v.', fg='red')

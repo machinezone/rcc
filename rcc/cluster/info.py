@@ -179,7 +179,11 @@ async def clusterCheck(redisUrl, redisPassword, redisUser):
 
     logging.info(f'{len(signatures)} unique signatures')
 
-    return len(signatures) == 1 and allBalanced and allCovered
+    return {
+        'success': len(signatures) == 1 and allCovered,
+        'all_covered': allCovered,
+        'all_balanced': allBalanced,
+    }
 
 
 async def runRedisCliClusterCheck(port, redisPassword, redisUser):

@@ -148,8 +148,8 @@ async def waitForClusterViewToBeConsistent(
     # give us 'timeout' seconds max for all nodes to agree
 
     while True:
-        ok = await clusterCheck(redisUrls, redisPassword, redisUser)
-        if ok:
+        info = await clusterCheck(redisUrls, redisPassword, redisUser)
+        if info['success']:
             break
 
         if time.time() - start > timeout:
@@ -198,8 +198,8 @@ async def binPackingReshardCoroutine(
     redisUrls, redisPassword, redisUser, weights, timeout, dry=False, nodeId=None
 ):
     logging.info('Verify that the cluster is in a good state')
-    ok = await clusterCheck(redisUrls, redisPassword, redisUser)
-    if not ok:
+    info = await clusterCheck(redisUrls, redisPassword, redisUser)
+    if not info['success']:
         raise ValueError('Cluster is not consistent. Run rcc cluster-check.')
 
     redisClient = RedisClient(redisUrls, redisPassword, redisUser)
