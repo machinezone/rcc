@@ -136,33 +136,30 @@ async def checkOpenedPort(portRange, timeout: int):
 
 
 # FIXME: cobra could use this version
-async def waitForAllConnectionsToBeReady(urls, password, user, timeout: int):
+async def waitForAllConnectionsToBeReady(url, password, user, timeout: int):
     start = time.time()
 
-    for url in urls:
-        sys.stderr.write(f'Checking {url} ')
+    while True:
+        sys.stderr.write('.')
+        sys.stderr.flush()
 
-        while True:
-            sys.stderr.write('.')
-            sys.stderr.flush()
+        try:
+            redis = RedisClient(url, password, user)
+            await redis.connect()
+            await redis.send('PING')
+            redis.close()
+            break
+        except Exception as e:
+            if time.time() - start > timeout:
+                sys.stderr.write('\n')
+                raise
 
-            try:
-                redis = RedisClient(url, password, user)
-                await redis.connect()
-                await redis.send('PING')
-                redis.close()
-                break
-            except Exception as e:
-                if time.time() - start > timeout:
-                    sys.stderr.write('\n')
-                    raise
+            logging.warning(e)
 
-                logging.warning(e)
+            waitTime = 0.1
+            await asyncio.sleep(waitTime)
 
-                waitTime = 0.1
-                await asyncio.sleep(waitTime)
-
-        sys.stderr.write('\n')
+    sys.stderr.write('\n')
 
 
 async def runNewCluster(
@@ -221,7 +218,9 @@ async def runNewCluster(
         # Check that all connections are ready
         click.secho(f'4/6 Wait for the cluster nodes to be running', bold=True)
         urls = [f'redis://localhost:{port}' for port in portRange]
-        await waitForAllConnectionsToBeReady(urls, password, user, timeout=5)
+        for url in urls:
+            sys.stderr.write(f'Checking {url} ')
+            await waitForAllConnectionsToBeReady(url, password, user, timeout=5)
 
         # Initialize the cluster (master/slave assignments, etc...)
         click.secho(f'5/6 Create the cluster', bold=True)
