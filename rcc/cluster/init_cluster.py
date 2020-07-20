@@ -13,7 +13,7 @@ import logging
 import click
 
 from rcc.cluster.create import ClusterCreateArgs, makeCreateCmd, createCluster
-from rcc.cluster.info import clusterCheck
+from rcc.cluster.info import clusterCheck, printRedisClusterInfoCoro
 from rcc.client import RedisClient
 
 
@@ -250,6 +250,10 @@ async def runNewCluster(
 
             print('Waiting for cluster to be consistent...')
             await asyncio.sleep(1)
+
+        print()
+        await printRedisClusterInfoCoro(urls[0], password, user)
+        print()
 
         secs = '%0.2f' % (time.time() - start)
         click.secho(f'Cluster ready in {secs} seconds !', fg='green')
