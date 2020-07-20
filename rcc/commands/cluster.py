@@ -54,6 +54,9 @@ class ClusterCommandsMixin:
                 role = 'master'
             elif 'slave' in role:
                 role = 'slave'
+            else:
+                # Skip 'handshake' role, or any non master or slave one
+                continue
 
             slots = []
             migrating_slots = []
