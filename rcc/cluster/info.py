@@ -74,10 +74,13 @@ async def printRedisClusterInfoCoro(
     redisClient = RedisClient(redisUrl, redisPassword, redisUser)
     nodes = await redisClient.cluster_nodes()
 
-    # build slave/master table
+    # build slave/master table, and the set of master
     replicas = collections.defaultdict(list)
+    masters = set()
     for node in nodes:
-        if node.role == 'slave':
+        if node.role == 'master':
+            masters.add(node.node_id)
+        elif node.role == 'slave':
             replicas[node.replicaof].append(node.node_id)
 
     for node in nodes:
@@ -103,7 +106,8 @@ async def printRedisClusterInfoCoro(
             if displaySlots:
                 info.append(slotRange)
         elif node.role == 'slave':
-            info.append(f'replicates {node.replicaof}')
+            label = 'missing' if node.replicaof not in masters else ''
+            info.append(f'replicates {node.replicaof} {label}')
 
         print(*info)
 
