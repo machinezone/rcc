@@ -1,4 +1,4 @@
-'''Tools to help initialize a redis cluster on kubernete
+'''Tool to help create, initialized and run a redis cluster on a local machine
 
 Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 '''
@@ -18,11 +18,12 @@ from rcc.cluster.init_cluster import runNewCluster
 @click.command()
 @click.option('--size', default=3, type=int)
 @click.option('--replicas', default=1, type=int)
-@click.option('--start_port', default=30001, type=int)
+@click.option('--start_port', '-p', default=30001, type=int)
 @click.option('--password', '-a')
 @click.option('--user')
 @click.option('--use_redis_cli', '-c', is_flag=True)
-def make_cluster(size, start_port, password, user, replicas, use_redis_cli):
+@click.option('--skip_init', '-f', is_flag=True)
+def make_cluster(size, start_port, password, user, replicas, use_redis_cli, skip_init):
     '''Create, initialize and run a redis cluster
     and a redis cluster proxy'''
     root = tempfile.mkdtemp()
@@ -41,6 +42,7 @@ def make_cluster(size, start_port, password, user, replicas, use_redis_cli):
                 user,
                 replicas,
                 manual,
+                not skip_init,
             )
         )
     except Exception as e:

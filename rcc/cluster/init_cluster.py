@@ -163,7 +163,15 @@ async def waitForAllConnectionsToBeReady(url, password, user, timeout: int):
 
 
 async def runNewCluster(
-    root, clusterReadyFile, startPort, size, password, user, replicas=1, manual=False
+    root,
+    clusterReadyFile,
+    startPort,
+    size,
+    password,
+    user,
+    replicas=1,
+    manual=False,
+    init=True,
 ):
     start = time.time()
     size = int(size)
@@ -222,34 +230,36 @@ async def runNewCluster(
             sys.stderr.write(f'Checking {url} ')
             await waitForAllConnectionsToBeReady(url, password, user, timeout=5)
 
-        # Initialize the cluster (master/slave assignments, etc...)
-        click.secho(f'5/6 Create the cluster', bold=True)
-        if manual:
-            # Do it ourself
-            await createCluster(createArgs)
-        else:
-            # Use redis-cli
-            createCmd = makeCreateCmd(createArgs)
-            await initCluster(createCmd)
+        if init:
+            # Initialize the cluster (master/slave assignments, etc...)
+            click.secho(f'5/6 Create the cluster', bold=True)
+            if manual:
+                # Do it ourself
+                await createCluster(createArgs)
+            else:
+                # Use redis-cli
+                createCmd = makeCreateCmd(createArgs)
+                await initCluster(createCmd)
 
-        # We just initialized the cluster, wait until it is 'consistent' and good to use
-        click.secho(f'6/6 Wait for all cluster nodes to be consistent', bold=True)
+            # We just initialized the cluster, wait until
+            # it is 'consistent' and good to use
+            click.secho(f'6/6 Wait for all cluster nodes to be consistent', bold=True)
 
-        redisUrl = f'redis://localhost:{portRange[0]}'
-        while True:
-            try:
-                info = await clusterCheck(redisUrl, password, user)
-            except Exception:
-                pass
+            redisUrl = f'redis://localhost:{portRange[0]}'
+            while True:
+                try:
+                    info = await clusterCheck(redisUrl, password, user)
+                except Exception:
+                    pass
 
-            if info['success']:
-                if not info['all_balanced']:
-                    logging.warning('The cluster is not balanced.')
-                    logging.warning('Some master do not have a replica.')
-                break
+                if info['success']:
+                    if not info['all_balanced']:
+                        logging.warning('The cluster is not balanced.')
+                        logging.warning('Some master do not have a replica.')
+                    break
 
-            print('Waiting for cluster to be consistent...')
-            await asyncio.sleep(1)
+                print('Waiting for cluster to be consistent...')
+                await asyncio.sleep(1)
 
         print()
         await printRedisClusterInfoCoro(urls[0], password, user)
