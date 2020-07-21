@@ -57,6 +57,8 @@ async def createCluster(args):
     redis-cli, so we cannot use redis-cli to initialize the cluster
     '''
 
+    logging.info(args)
+
     #
     # Hash slot allocation
     #
@@ -83,7 +85,7 @@ async def createCluster(args):
     # Print slot assignment
     for i, nodeSlots in enumerate(allSlots):
         # Master[0] -> Slots 0 - 4095
-        print('Master[{}] -> Slotes {} - {}'.format(i, nodeSlots[0], nodeSlots[-1]))
+        print('Master[{}] -> Slots {} - {}'.format(i, nodeSlots[0], nodeSlots[-1]))
 
     nodes = args.ips.split()
 
