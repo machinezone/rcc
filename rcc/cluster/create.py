@@ -47,7 +47,7 @@ async def createCluster(args):
 
     The main difference is that we first set slots
     Then run cluster meet
-    Then set replicas, as setting replicas requires the master to be known by th
+    Then set replicas, as setting replicas requires the master to be known by the
     replica, and hence the meet to have happened already
 
     Another difference is master/replica assignment from the input list of ip address
