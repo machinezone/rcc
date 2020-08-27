@@ -12,6 +12,7 @@ import re
 import traceback
 from abc import ABC, abstractmethod
 from typing import Optional
+from hashlib import sha1
 
 from rcc.client import RedisClient
 
@@ -103,6 +104,7 @@ async def redisSubscriber(
         'redis_node': redisHost,
         'redis_client_id': clientId,
         'stream_exists': streamExists,
+        'stream_name': stream,
     }
 
     try:
@@ -131,12 +133,20 @@ async def redisSubscriber(
                 msg = result[1]
                 data = msg[b'json']
 
+                msgCksum = msg.get(b'sha1')
+                if msgCksum is not None:
+                    cksum = sha1(data).hexdigest().encode()
+                    if cksum != msgCksum:
+                        err = f'{lastId}: invalid xread msg cksum'
+                        logging.error(err)
+                        continue
+
                 payloadSize = len(data)
                 try:
                     msg = json.loads(data)
                 except json.JSONDecodeError:
-                    msgEncoded = base64.b64encode(data)
-                    err = f'malformed json: base64: {msgEncoded} raw: {data}'
+                    msgEncoded = base64.b64encode(data).encode()
+                    err = f'{lastId}: malformed json: base64: {msgEncoded} raw: {data}'
                     logging.error(err)
                     continue
 
