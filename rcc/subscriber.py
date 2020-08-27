@@ -6,10 +6,7 @@ Copyright (c) 2020 Machine Zone, Inc. All rights reserved.
 import asyncio
 import base64
 
-try:
-    import rapidjson as json
-except ImportError:
-    import json
+import json
 import logging
 import re
 import traceback
