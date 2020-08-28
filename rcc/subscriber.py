@@ -145,7 +145,7 @@ async def redisSubscriber(
                 try:
                     msg = json.loads(data)
                 except json.JSONDecodeError:
-                    msgEncoded = base64.b64encode(data).encode()
+                    msgEncoded = base64.b64encode(data).decode()
                     err = f'{lastId}: malformed json: base64: {msgEncoded} raw: {data}'
                     logging.error(err)
                     continue
