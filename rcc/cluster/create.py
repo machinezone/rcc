@@ -94,6 +94,7 @@ async def createCluster(args):
         nodeAddress = nodes[i]
         redisUrl = f'redis://{nodeAddress}'
         masterClient = RedisClient(redisUrl, args.password, args.user)
+        await masterClient.send('CLUSTER', 'DELSLOTS', *allSlots[i])
         await masterClient.send('CLUSTER', 'ADDSLOTS', *allSlots[i])
 
     # Give each node its own 'epoch'
