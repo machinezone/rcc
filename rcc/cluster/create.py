@@ -59,6 +59,21 @@ async def createCluster(args):
 
     logging.info(args)
 
+    nodes = args.ips.split()
+
+    #
+    # Reset all first
+    #
+    for nodeAddress in nodes:
+        redisUrl = f'redis://{nodeAddress}'
+        client = RedisClient(redisUrl, args.password, args.user)
+
+        dbSize = await client.send('DBSIZE')
+        if dbSize > 0:
+            await client.send('FLUSHALL')
+
+        await client.send('CLUSTER', 'RESET', 'hard')
+
     #
     # Hash slot allocation
     #
@@ -87,27 +102,12 @@ async def createCluster(args):
         # Master[0] -> Slots 0 - 4095
         print('Master[{}] -> Slots {} - {}'.format(i, nodeSlots[0], nodeSlots[-1]))
 
-    nodes = args.ips.split()
-
     # Setting slots
     for i in range(args.shards):
         nodeAddress = nodes[i]
         redisUrl = f'redis://{nodeAddress}'
         masterClient = RedisClient(redisUrl, args.password, args.user)
-
-        try:
-            # Normal use case for empty clusters
-            await masterClient.send('CLUSTER', 'ADDSLOTS', *allSlots[i])
-        except Exception:
-
-            # For existing clusters, we will first delete all the slots
-            # FIXME: this behavior should probably be behind a flag
-            logging.warning(f'{redisUrl}: ADDSLOTS error ignored')
-            logging.warning(f'{redisUrl}: Reseting cluster node.')
-
-            await masterClient.send('FLUSHALL')
-            await masterClient.send('CLUSTER', 'RESET')
-            await masterClient.send('CLUSTER', 'ADDSLOTS', *allSlots[i])
+        await masterClient.send('CLUSTER', 'ADDSLOTS', *allSlots[i])
 
     # Give each node its own 'epoch'
     click.secho('>>> Assign a different config epoch to each node', bold=True)
