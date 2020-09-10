@@ -94,8 +94,24 @@ async def createCluster(args):
         nodeAddress = nodes[i]
         redisUrl = f'redis://{nodeAddress}'
         masterClient = RedisClient(redisUrl, args.password, args.user)
-        await masterClient.send('CLUSTER', 'DELSLOTS', *allSlots[i])
-        await masterClient.send('CLUSTER', 'ADDSLOTS', *allSlots[i])
+
+        try:
+            # Normal use case for empty clusters
+            await masterClient.send('CLUSTER', 'ADDSLOTS', *allSlots[i])
+        except Exception:
+
+            # For existing clusters, we will first delete all the slots
+            # FIXME: this behavior should probably be behind a flag
+            logging.warning(f'{redisUrl}: ADDSLOTS error ignored')
+            logging.warning(f'{redisUrl}: Clearing existing slots...')
+
+            for slot in allSlots[i]:
+                try:
+                    await masterClient.send('CLUSTER', 'DELSLOTS', slot)
+                except Exception:
+                    logging.warning(f'{redisUrl}: DELSLOTS {slot} error ignored')
+
+            await masterClient.send('CLUSTER', 'ADDSLOTS', *allSlots[i])
 
     # Give each node its own 'epoch'
     click.secho('>>> Assign a different config epoch to each node', bold=True)
