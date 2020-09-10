@@ -48,6 +48,8 @@ async def printRedisClusterInfoCoro(
 
             rows[0].append(statAlias)
 
+        rows[0].append('keys')
+
         for node, client in clients:
             info = await client.send('INFO')
 
@@ -56,6 +58,9 @@ async def printRedisClusterInfoCoro(
                 statName = stat.split()[0]
                 statValue = info[statName]
                 row.append(statValue)
+
+            dbSize = await client.send('DBSIZE')
+            row.append(dbSize)
 
             rows.append(row)
 
