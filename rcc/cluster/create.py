@@ -70,7 +70,10 @@ async def createCluster(args):
 
         dbSize = await client.send('DBSIZE')
         if dbSize > 0:
-            await client.send('FLUSHALL')
+            try:
+                await client.send('FLUSHALL')
+            except Exception as e:
+                logging.warning(f'Ignoring error with FLUSHALL: {e}')
 
         await client.send('CLUSTER', 'RESET', 'hard')
 
