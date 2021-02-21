@@ -110,7 +110,7 @@ The tool will display informations visually as well, such as the distribution of
  172.25.225.42:6379 [341379] ∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
 ```
 
-### Cluster Resharing tool
+### Cluster Resharding tool
 
 The *reshard* command will reshard your cluster in an optimal way based on your usage. It consumes the output of the *keyspace* command. It is documented in great details [here](https://machinezone.github.io/rcc/binpacking/) and [there](https://machinezone.github.io/rcc/resharding/).
 
