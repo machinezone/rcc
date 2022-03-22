@@ -178,7 +178,7 @@ async def clusterCheck(redisUrl, redisPassword, redisUser):
 
         cksum = hashlib.md5(signature.encode('utf-8')).hexdigest()
 
-        logging.info(f'{url} {cksum} balanced {balanced} coverage {fullCoverage}')
+        logging.info(f'node {url} cluster representation checksum {cksum} balanced {balanced} coverage {fullCoverage}')
         logging.debug('\n' + signature)
 
     logging.info(f'{len(signatures)} unique signatures')
